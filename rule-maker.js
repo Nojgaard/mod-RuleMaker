@@ -150,6 +150,7 @@ function readJson(cy, jsonEles) {
         var lbl = getLabel(ele.data("label"));
         ele.data("color", lbl.type.color);
     })
+    cy.fit();
 }
 
 function readGML(cy, jsonGML) {

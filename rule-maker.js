@@ -341,7 +341,7 @@ class Rule {
     toString() {
         var output = [];
         output.push("rule [");
-        output.push("  ruleId \"TEST\"");
+        output.push("  ruleID \"TEST\"");
         ["left", "context", "right"].forEach(T => {
             output.push("  " + T + " [");
             this[T].nodes.forEach(function (node) {

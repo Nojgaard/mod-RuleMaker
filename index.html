@@ -91,8 +91,6 @@
 
 			document.querySelector('#makeRule').addEventListener('click', function () {
 				var rule = new Rule(cy);
-				alert(rule.toString());
-				alert(GML.parse(rule.toString()));
 				var blob = new Blob([rule.toString()], { type: "text/plain;charset=utf-8" });
 				saveAs(blob, "rule.gml");
 			});

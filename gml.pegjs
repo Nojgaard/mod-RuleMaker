@@ -1,5 +1,5 @@
 start
-  = "rule" _ "[" _ "ruleId" _ rule_id:string _ "left" _ left:container _ "context" _ context:container _ "right" _ right:container _ "]" _ { return {id: rule_id, left: left, context: context, right: right}; }
+  = "rule" _ "[" _ "ruleID" _ rule_id:string _ "left" _ left:container _ "context" _ context:container _ "right" _ right:container _ "]" _ { return {id: rule_id, left: left, context: context, right: right}; }
 
 container
   = "[" _ node_list:(node)* _ edge_list:(edge)* _ "]" { return {nodes: node_list, edges: edge_list} }

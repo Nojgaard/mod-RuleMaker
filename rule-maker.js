@@ -14,12 +14,12 @@ function initCyGraph() {
                 selector: 'node[label]',
                 style: {
                     'label': 'data(label)',
-                    'background-color': 'data(color)'
+                    'background-color': 'data(color)',
     //                 "color": "#fff",
     //                 "text-outline-color": "black",
     //                 "text-outline-width": 1,
-    //                 "text-valign": "center",
-    //   "text-halign": "center"
+                    "text-valign": "center",
+      "text-halign": "center"
 
                 }
             },
@@ -44,7 +44,7 @@ function initCyGraph() {
                 selector: 'node:selected',
                 style: {
                     'border-width': '2px',
-                    'border-color': 'red'
+                    'border-color': '#111111'
                 }
             },
             {
@@ -59,7 +59,7 @@ function initCyGraph() {
             {
                 selector: '.eh-handle',
                 style: {
-                    'background-color': 'red',
+                    'background-color': '#111111',
                     'width': 12,
                     'height': 12,
                     'shape': 'ellipse',
@@ -72,7 +72,7 @@ function initCyGraph() {
             {
                 selector: '.eh-hover',
                 style: {
-                    'background-color': 'red'
+                    'background-color': '#111111'
                 }
             },
 
@@ -80,7 +80,7 @@ function initCyGraph() {
                 selector: '.eh-source',
                 style: {
                     'border-width': 2,
-                    'border-color': 'red'
+                    'border-color': '#111111'
                 }
             },
 
@@ -88,17 +88,17 @@ function initCyGraph() {
                 selector: '.eh-target',
                 style: {
                     'border-width': 2,
-                    'border-color': 'red'
+                    'border-color': '#111111'
                 }
             },
 
             {
                 selector: '.eh-preview, .eh-ghost-edge',
                 style: {
-                    'background-color': 'red',
-                    'line-color': 'red',
-                    'target-arrow-color': 'red',
-                    'source-arrow-color': 'red'
+                    'background-color': '#DDDDDD',
+                    'line-color': '#DDDDDD',
+                    'target-arrow-color': '#DDDDDD',
+                    'source-arrow-color': '#DDDDDD'
                 }
             },
 
@@ -144,6 +144,11 @@ function readJson(cy, jsonEles) {
         if (id >= cy.id) {
             cy.id = id + 1;
         }
+    })
+
+    cy.$(":selectable").forEach(ele => {
+        var lbl = getLabel(ele.data("label"));
+        ele.data("color", lbl.type.color);
     })
 }
 
@@ -247,16 +252,16 @@ function addNode(cy, pos) {
 
 const LabelType = {
     STATIC: {
-        color: "gray"
+        color: "#AAAAAA"
     },
     REMOVE: {
-        color: "red"
+        color: "#FF4136"
     },
     CREATE: {
-        color: "blue"
+        color: "#2ECC40"
     },
     RENAME: {
-        color: "purple"
+        color: "#7FDBFF"
     }
 }
 

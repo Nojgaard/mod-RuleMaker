@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>cytoscape-edgehandles.js demo</title>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+	<script src="vendor/filesaver/FileSaver.js"></script>
+	<script src="vendor/cytoscape/cytoscape.min.js"></script>
+
+	<!-- for testing with local version of cytoscape.js -->
+	<!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
+
+	<script src="vendor/lodash/lodash.js"></script>
+	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
+	<script src="rule-maker.js"></script>
+	<script src="gml.js"></script>
+	<!-- Bootstrap CSS CDN -->
+	<script src="vendor/jquery/jquery.min.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="vendor/font-awesome-4.7.0/css/font-awesome.min.css">
+
+
+	<style>
+		body {
+			font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+			font-size: 14px;
+		}
+
+		#cy {
+			border: solid;
+			border-width: 1;
+			height: 400px;
+		}
+
+		h1 {
+			margin-top: 10px;
+			opacity: 0.5;
+			font-size: 1em;
+			font-weight: bold;
+		}
+
+		#sidebar-wrapper {
+			min-height: 100vh;
+			margin-left: -10rem;
+			min-width: 10rem;
+			-webkit-transition: margin .25s ease-out;
+			-moz-transition: margin .25s ease-out;
+			-o-transition: margin .25s ease-out;
+			transition: margin .25s ease-out;
+		}
+
+		#sidebar-wrapper .sidebar-heading {
+			padding: 0.875rem 1.25rem;
+			font-size: 1.2rem;
+		}
+
+		#page-content-wrapper {
+			min-width: 50vw;
+		}
+
+		#wrapper.toggled #sidebar-wrapper {
+			margin-left: 0;
+		}
+	</style>
+
+	<script>
+		
+		document.addEventListener('DOMContentLoaded', function () {
+			var cy = initCyGraph();
+
+
+			document.querySelector('#save').addEventListener('click', function () {
+				var blob = new Blob([JSON.stringify(cy.json())], { type: "text/plain;charset=utf-8" });
+				saveAs(blob, "cyGraph.txt");
+
+			});
+
+			document.querySelector('#makeRule').addEventListener('click', function () {
+				var rule = new Rule(cy);
+				alert(rule.toString());
+				alert(GML.parse(rule.toString()));
+				var blob = new Blob([rule.toString()], { type: "text/plain;charset=utf-8" });
+				saveAs(blob, "rule.gml");
+			});
+
+			document.querySelector('#txtRelabel').addEventListener('keyup', function (event) {
+				if (event.keyCode !== 13) { return; }
+				cy.$(':selected').data("label", this.value);
+
+				var lbl = getLabel(this.value);
+				cy.$(':selected').data("color", lbl.type.color);
+			});
+
+			document.querySelector('#inputLoadCyGraph').addEventListener('change', function (event) {
+				var input = event.target;
+
+				var reader = new FileReader();
+				reader.onload = function () {
+					var text = reader.result;
+					var jsonEles = JSON.parse(text);
+					readJson(cy, jsonEles);
+				};
+				reader.readAsText(input.files[0]);
+			});
+
+			document.querySelector('#inputLoadRule').addEventListener('change', function (event) {
+				var input = event.target;
+
+				var reader = new FileReader();
+				reader.onload = function () {
+					var text = reader.result;
+					var jsonGML = GML.parse(text);
+					readGML(cy, jsonGML);
+				};
+				reader.readAsText(input.files[0]);
+			});
+
+			document.querySelector('#btnClearGraph').addEventListener('click', function (event) {
+				cy.elements().remove();
+				cy.id = 0;
+			});
+
+
+			var tappedBefore = null;
+			var tappedTimeout;
+			cy.on('tap', function (event) {
+				var tappedNow = event.cyTarget;
+				if (tappedTimeout && tappedBefore) {
+					clearTimeout(tappedTimeout);
+				}
+				if (tappedBefore === tappedNow) {
+					tappedBefore = null;
+					pos = event.renderedPosition;
+					n = addNode(cy, pos);
+					n.select();
+				} else {
+					tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
+					tappedBefore = tappedNow;
+				}
+			});
+
+			document.addEventListener('keyup', function (event) {
+				if (event.keyCode === 46) {
+					cy.$(':selected').remove();
+				}
+				if (event.keyCode === 82 && document.querySelector('#txtRelabel') !== document.activeElement) {
+					document.querySelector('#txtRelabel').value = "";
+					document.querySelector('#txtRelabel').focus();
+				}
+			});
+
+			document.querySelector("#menu-toggle").addEventListener("click", function (e) {
+				e.preventDefault();
+				document.querySelector("#wrapper").classList.toggle("toggled");
+			});
+
+		});
+	</script>
+</head>
+
+<body>
+
+	<!-- Page Content -->
+	<div class="d-flex toggled" id="wrapper">
+		<div id="sidebar-wrapper" class="bg-light border-right">
+			<div class="sidebar-heading">Rule Maker</div>
+
+			<div class="list-group list-group-flush">
+					Relabel selected node/edge:
+					<input class="list-group-item form-control" type="text" id="txtRelabel" />
+				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#savemenu">Save Options</span></div>
+				<div id="savemenu" class="collapse">
+					<div class="list-group">
+						<button class="list-group-item list-group-item-action" type="button" id="save">Save Graph</button>
+						<button class="list-group-item list-group-item-action" type="button" id="makeRule">Save Rule</button>
+					</div>
+				</div>
+				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#loadmenu">Load Options</div>
+				<div id="loadmenu" class="collapse">
+						<div class="input-group">
+								<div class="custom-file">
+									<input type="file" class="custom-file-input" id="inputLoadCyGraph">
+									<label class="custom-file-label">Cyto Graph</label>
+								</div>
+							</div>
+
+							<div class="input-group">
+									<div class="custom-file">
+										<input type="file" class="custom-file-input" id="inputLoadRule">
+										<label class="custom-file-label">Rule GML</label>
+									</div>
+								</div>
+					
+				</div>
+				<button class="list-group-item list-group-item-action" type="button" id="btnClearGraph">Clear Graph</button>
+			</div>
+				<!-- <ul class="list-group">
+					<li class="list-group-item border-0">
+						Relabel selected node/edge:
+						<input class="form-control" type="text" id="txtRelabel" />
+					</li>
+					<li class="list-group-item border-0">
+						<button class="btn btn-dark" id="save">SaveGraph</button>
+						<button class="btn btn-dark" id="makeRule">Make Rule</button>
+					</li>
+					<li class="list-group-item border-0">
+					</li>
+				</ul> -->
+				<!-- <div class="input-group">
+					<div class="input-group-prepend">
+						<span class="input-group-text" id="inputGroupFileAddon01">Load Graph</span>
+					</div>
+					<div class="custom-file">
+						<input type="file" class="custom-file-input" id="inputLoadCyGraph"
+							aria-describedby="inputGroupFileAddon01">
+						<label class="custom-file-label" for="inputGroupFile01">Choose file</label>
+					</div>
+				</div>
+				<div class="my-auto">
+					<button class="btn btn-dark" id="btnClearGraph">Clear Graph</button>
+				</div> -->
+			<!-- </div> -->
+			<!--
+					<textarea id="output" class="form-control" rows="5" cols="60" name="description">
+
+				</textarea>
+			-->
+		</div>
+		<div id="page-content-wrapper" class="container-fluid">
+			<button class="btn btn-primary" id="menu-toggle"><i class="fa fa-bars"></i></button>
+			<div id="cy"></div>
+		</div>
+	</div>
+
+</body>
+
+</html>

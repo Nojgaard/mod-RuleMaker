@@ -14,12 +14,12 @@ function initCyGraph() {
                 selector: 'node[label]',
                 style: {
                     'label': 'data(label)',
-                    'background-color': 'data(color)',
-                    "color": "#fff",
-                    "text-outline-color": "black",
-                    "text-outline-width": 1,
-                    "text-valign": "center",
-      "text-halign": "center"
+                    'background-color': 'data(color)'
+    //                 "color": "#fff",
+    //                 "text-outline-color": "black",
+    //                 "text-outline-width": 1,
+    //                 "text-valign": "center",
+    //   "text-halign": "center"
 
                 }
             },
@@ -28,12 +28,15 @@ function initCyGraph() {
                 selector: 'edge[label]',
                 style: {
                     'curve-style': 'bezier',
-                    'label': 'data(label)',
-                    'text-margin-y': '-5px',
+                    'label': function (label) { return (label.data().label + "\n \u2060")},
+                    // 'text-margin-y': '0px',
+                    // 'text-margin-x': '0px',
+                    'text-wrap': 'wrap',
                     'line-color': 'data(color)',
-                    "color": "#fff",
-                    "text-outline-color": "black",
-                    "text-outline-width": 1
+                    "edge-text-rotation": "autorotate"
+                    // "color": "#fff",
+                    // "text-outline-color": "black",
+                    // "text-outline-width": 1
                 }
             },
 
@@ -133,7 +136,8 @@ function initCyGraph() {
 }
 
 function readJson(cy, jsonEles) {
-    cy.json(jsonEles)
+    cy.elements().remove();
+    cy.add(jsonEles.elements)
     cy.id = 0;
     cy.nodes(":selectable").forEach(node => {
         var id = parseInt(node.data("id"));

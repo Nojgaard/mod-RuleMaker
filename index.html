@@ -129,8 +129,19 @@
 				var reader = new FileReader();
 				reader.onload = function () {
 					var text = reader.result;
-					var jsonGML = GML.parse(text);
-					readGML(cy, jsonGML);
+					var data = {
+						"type": "ruleGML",
+						"data": text
+					};
+					mod_service.send("getRuleCoords", data, function(response) {
+						try {
+							var jRule = GML.parse(response.ruleGML);
+						} catch(e) {
+							console.log(e);
+							return;
+						}
+						readRuleJson(cy, jRule);
+					});
 				};
 				reader.readAsText(input.files[0]);
 			});
@@ -177,6 +188,26 @@
 						return;
 					}
 					readModGraph(cy, jsonGraph);
+				});
+			});
+
+
+			document.querySelector('#btnRuleCoord').addEventListener('click', function (event) {
+				var rule = new Rule(cy);
+				var data = {
+					"type": "ruleGML",
+					"data": rule.toString()
+				};
+				mod_service.send("getRuleCoords", data, function(response) {
+					try {
+						console.log(response);
+						var jRule = GML.parse(response.ruleGML);
+						console.log(jRule);
+					} catch(e) {
+						console.log(e);
+						return;
+					}
+					readRuleJson(cy, jRule);
 				});
 			});
 
@@ -262,6 +293,7 @@
 				</div>
 				<button class="list-group-item list-group-item-action" type="button" id="btnClearGraph">Clear Graph</button>
 				<button class="list-group-item list-group-item-action" type="button" id="btnGraphCoord">Use MØD Graph Coordinates</button>
+				<button class="list-group-item list-group-item-action" type="button" id="btnRuleCoord">Use MØD Rule Coordinates</button>
 			</div>
 				<!-- <ul class="list-group">
 					<li class="list-group-item border-0">

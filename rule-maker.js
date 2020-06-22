@@ -112,11 +112,11 @@ function initCyGraph() {
 
         elements: {
             nodes: [
-                { data: { id: 0, label: '/C', color: LabelType.CREATE.color } },
+                { data: { id: 0, label: 'C/C+', color: LabelType.CREATE.color } },
                 { data: { id: 1, label: 'C', color: LabelType.STATIC.color } },
             ],
             edges: [
-                { data: { source: 0, target: 1, label: "=", color: LabelType.STATIC.color } }
+                { data: { source: 0, target: 1, label: "/=", color: LabelType.STATIC.color } }
             ]
         },
     });
@@ -205,14 +205,14 @@ function readModGraph(cy, jsonGraph) {
      lay.run();
 }
 
-function readGML(cy, jsonGML) {
+function readRuleJson(cy, jsonGML) {
     var nodes = new Map();
     var edges = new Map();
     var id = 0;
     ["left", "context", "right"].forEach(T => {
         jsonGML[T].nodes.forEach(node => {
             if (node.id >= id) { id = node.id + 1; }
-            nodes.set(node.id, { id: node.id, left: "", right: "" });
+            nodes.set(node.id, { id: node.id, left: "", right: "", position: node.position });
         });
         jsonGML[T].edges.forEach(edge => {
             edges.set([edge.src, edge.tar].join(","), { src: edge.src, tar: edge.tar, left: "", right: "" });
@@ -263,6 +263,8 @@ function readGML(cy, jsonGML) {
                 color: lbl.type.color
             }
         });
+       node.position.x = node.position.x * 100.;
+       node.position.y = node.position.y * 100.;
     });
 
     edges.forEach(function (edge, key) {
@@ -284,9 +286,17 @@ function readGML(cy, jsonGML) {
         });
     });
 
-
-    var lay = cy.layout({ name: 'circle' });
-    lay.run();
+    var nodes_ = nodes;
+     var lay = cy.layout({ 
+         name: 'preset',
+         padding: 100,
+         positions: function (node) {
+             return nodes.get(parseInt(node.id())).position;
+         }
+     });
+     lay.run();
+    // var lay = cy.layout({ name: 'circle' });
+    // lay.run();
 }
 
 function addNode(cy, pos) {

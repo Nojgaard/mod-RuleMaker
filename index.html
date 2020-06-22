@@ -17,7 +17,9 @@
 	<script src="vendor/lodash/lodash.js"></script>
 	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
 	<script src="rule-maker.js"></script>
-	<script src="gml.js"></script>
+	<script src="server/mod_service.js"></script>
+	<script src="grammars/gml.js"></script>
+	<script src="grammars/gml_graph.js"></script>
 	<!-- Bootstrap CSS CDN -->
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -85,7 +87,7 @@
 
 			document.querySelector('#save').addEventListener('click', function () {
 				var blob = new Blob([JSON.stringify(cy.json())], { type: "text/plain;charset=utf-8" });
-				saveAs(blob, "cyGraph.txt");
+				saveAs(blob, "cyGraph.json");
 
 			});
 
@@ -93,6 +95,12 @@
 				var rule = new Rule(cy);
 				var blob = new Blob([rule.toString()], { type: "text/plain;charset=utf-8" });
 				saveAs(blob, "rule.gml");
+			});
+
+			document.querySelector('#saveModGraph').addEventListener('click', function () {
+				var graph = new ModGraph(cy);
+				var blob = new Blob([graph.toString()], { type: "text/plain;charset=utf-8" });
+				saveAs(blob, "graph.gml");
 			});
 
 			document.querySelector('#txtRelabel').addEventListener('keyup', function (event) {
@@ -127,9 +135,49 @@
 				reader.readAsText(input.files[0]);
 			});
 
+			document.querySelector('#inputLoadModGraph').addEventListener('change', function (event) {
+				var input = event.target;
+
+				var reader = new FileReader();
+				reader.onload = function () {
+					var text = reader.result;
+					var data = {
+						"type": "graphGML",
+						"data": text
+					};
+					mod_service.send("getGraphCoords", data, function(response) {
+						try {
+							var jsonGraph = GML_GRAPH.parse(response.graphGML);
+						} catch(e) {
+							console.log(e);
+							return;
+						}
+						readModGraph(cy, jsonGraph);
+					});
+				};
+				reader.readAsText(input.files[0]);
+			});
+
 			document.querySelector('#btnClearGraph').addEventListener('click', function (event) {
 				cy.elements().remove();
 				cy.id = 0;
+			});
+
+			document.querySelector('#btnGraphCoord').addEventListener('click', function (event) {
+				var graph = new ModGraph(cy);
+				var data = {
+					"type": "graphGML",
+					"data": graph.toString()
+				};
+				mod_service.send("getGraphCoords", data, function(response) {
+					try {
+						var jsonGraph = GML_GRAPH.parse(response.graphGML);
+					} catch(e) {
+						console.log(e);
+						return;
+					}
+					readModGraph(cy, jsonGraph);
+				});
 			});
 
 
@@ -183,8 +231,9 @@
 				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#savemenu">Save Options</span></div>
 				<div id="savemenu" class="collapse">
 					<div class="list-group">
-						<button class="list-group-item list-group-item-action" type="button" id="save">Save Graph</button>
+						<button class="list-group-item list-group-item-action" type="button" id="save">Save CytoGraph</button>
 						<button class="list-group-item list-group-item-action" type="button" id="makeRule">Save Rule</button>
+						<button class="list-group-item list-group-item-action" type="button" id="saveModGraph">Save MØD Graph</button>
 					</div>
 				</div>
 				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#loadmenu">Load Options</div>
@@ -202,9 +251,17 @@
 										<label class="custom-file-label">Rule GML</label>
 									</div>
 								</div>
+
+								<div class="input-group">
+									<div class="custom-file">
+										<input type="file" class="custom-file-input" id="inputLoadModGraph">
+										<label class="custom-file-label">MØD Graph</label>
+									</div>
+								</div>
 					
 				</div>
 				<button class="list-group-item list-group-item-action" type="button" id="btnClearGraph">Clear Graph</button>
+				<button class="list-group-item list-group-item-action" type="button" id="btnGraphCoord">Use MØD Graph Coordinates</button>
 			</div>
 				<!-- <ul class="list-group">
 					<li class="list-group-item border-0">

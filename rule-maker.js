@@ -153,6 +153,58 @@ function readJson(cy, jsonEles) {
     cy.fit();
 }
 
+function readModGraph(cy, jsonGraph) {
+    var nodes = new Map();
+    var edge = new Map();
+    var id = jsonGraph.nodes.length;
+
+    cy.elements().remove();
+    cy.id = id;
+
+    jsonGraph.nodes.forEach(node => {
+        var id = node.id;
+        cy.add({
+            group: 'nodes',
+            data: {
+                label: node.label,
+                id: id,
+                color: LabelType.STATIC.color
+            },
+        });
+    });
+
+    jsonGraph.edges.forEach(edge => {
+        var src = edge.src;
+        var tar = edge.tar;
+        var lbl = edge.label
+        cy.add({
+            group: 'edges',
+            data: {
+                source: src,
+                target: tar,
+                label: lbl,
+                color: LabelType.STATIC.color
+            }
+        });
+    });
+
+
+    jsonGraph.nodes.forEach(function(node) {
+        node.position.x = node.position.x * 100.;
+        node.position.y = node.position.y * 100.;
+        
+    });
+
+     var lay = cy.layout({ 
+         name: 'preset',
+         padding: 100,
+         positions: function (node) {
+             return jsonGraph.nodes[node.id()].position;
+         }
+     });
+     lay.run();
+}
+
 function readGML(cy, jsonGML) {
     var nodes = new Map();
     var edges = new Map();
@@ -290,6 +342,42 @@ function getLabel(lbl) {
         out.right = splitLbl[1];
     }
     return out;
+}
+
+class ModGraph {
+    constructor(cy) {
+        this.nodes = []
+        this.edges = []
+
+        cy.nodes(":selectable").forEach(node => {
+            var lbl = node.data("label");
+            var id = node.data("id");
+
+            this.nodes.push({id: id, label: lbl});
+        });
+
+        cy.edges(":selectable").forEach(edge => {
+            var lbl = edge.data("label");
+            var src = edge.source().data("id");
+            var tar = edge.target().data("id");
+            
+            this.edges.push({src: src, tar: tar, label: lbl});
+        });
+    }
+
+    toString () {
+        var out = [];
+        out.push("graph [");
+        this.nodes.forEach(node => {
+            out.push("    node [ id " + node.id + " label \"" + node.label + "\" ]");
+        });
+
+        this.edges.forEach(edge => {
+            out.push("    edge [ source " + edge.src + " target " + edge.tar + " label \"" + edge.label + "\" ]");
+        });
+        out.push("]");
+        return out.join("\n");
+    }
 }
 
 class Rule {

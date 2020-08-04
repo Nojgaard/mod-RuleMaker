@@ -16,7 +16,9 @@
 
 	<script src="vendor/lodash/lodash.js"></script>
 	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
-	<script src="rule-maker.js"></script>
+	<!-- <script src="rule-maker.js"></script> -->
+	<script src="js/modgraph.js"></script>
+	<script src="js/dpospan.js"></script>
 	<script src="server/mod_service.js"></script>
 	<script src="grammars/gml.js"></script>
 	<script src="grammars/gml_graph.js"></script>
@@ -33,11 +35,19 @@
 			font-size: 14px;
 		}
 
+		html,
+		body {
+			height: 100%;
+			width: 100%;
+			margin: 0%;
+		}
+
 		#cy {
 			/* border: solid;
 			border-width: 2px; */
 			height: 100%;
 			min-height: 100%;
+
 		}
 
 		h1 {
@@ -47,81 +57,92 @@
 			font-weight: bold;
 		}
 
-		#menu-toggle {
-			position: absolute;
-			margin-top: 10px;
-			margin-left: 10px;
-			z-index: 999;
-		}
-
-		#sidebar-wrapper {
-			min-height: 100vh;
-			margin-left: -15rem;
-			min-width: 15rem;
-			-webkit-transition: margin .25s ease-out;
-			-moz-transition: margin .25s ease-out;
-			-o-transition: margin .25s ease-out;
-			transition: margin .25s ease-out;
-		}
-
-		#sidebar-wrapper .sidebar-heading {
-			padding: 0.875rem 1.25rem;
-			font-size: 1.2rem;
-		}
 
 		#page-content-wrapper {
-			min-width: 50vw;
+			min-width: 100%;
 			padding: 0;
+			height: calc(100vh - 56px);
+			;
 		}
 
-		#wrapper.toggled #sidebar-wrapper {
-			margin-left: 0;
+		#cySpan {
+			height: 100%;
+			min-height: 100%;
+			display: none;
+		}
+
+		.cySpanGraph {
+			height: 100%;
+			min-height: 100%;
+			width: 33%;
+		}
+
+		#cySpanMiddle{
+			border-left: 5px solid black;
+			border-right: 5px solid black;
 		}
 	</style>
 
 	<script>
-		
+
 		document.addEventListener('DOMContentLoaded', function () {
-			var cy = initCyGraph();
+			var mograph = window.modgraph = new ModGraph(document.getElementById('cy'));
 
 
-			document.querySelector('#save').addEventListener('click', function () {
-				var blob = new Blob([JSON.stringify(cy.json())], { type: "text/plain;charset=utf-8" });
-				saveAs(blob, "cyGraph.json");
+			// document.querySelector('#save').addEventListener('click', function () {
+			// 	var blob = new Blob([JSON.stringify(cy.json())], { type: "text/plain;charset=utf-8" });
+			// 	saveAs(blob, "cyGraph.json");
 
-			});
+			// });
 
 			document.querySelector('#makeRule').addEventListener('click', function () {
-				var rule = new Rule(cy);
-				var blob = new Blob([rule.toString()], { type: "text/plain;charset=utf-8" });
+				var gmlrule = modgraph.toGMLRule();
+				var blob = new Blob([gmlrule], { type: "text/plain;charset=utf-8" });
 				saveAs(blob, "rule.gml");
 			});
 
 			document.querySelector('#saveModGraph').addEventListener('click', function () {
-				var graph = new ModGraph(cy);
-				var blob = new Blob([graph.toString()], { type: "text/plain;charset=utf-8" });
+				var gmlgraph = modgraph.toGMLGraph();
+				var blob = new Blob([gmlgraph], { type: "text/plain;charset=utf-8" });
 				saveAs(blob, "graph.gml");
 			});
 
+
 			document.querySelector('#txtRelabel').addEventListener('keyup', function (event) {
+				// Wait for the enter key
 				if (event.keyCode !== 13) { return; }
-				cy.$(':selected').data("label", this.value);
 
-				var lbl = getLabel(this.value);
-				cy.$(':selected').data("color", lbl.type.color);
+				document.querySelector("#btnRelabel").click();
+
 			});
 
-			document.querySelector('#inputLoadCyGraph').addEventListener('change', function (event) {
-				var input = event.target;
+			document.querySelector("#btnRelabel").addEventListener("click", function (event) {
+				var txtLbl = document.querySelector('#txtRelabel').value;
 
-				var reader = new FileReader();
-				reader.onload = function () {
-					var text = reader.result;
-					var jsonEles = JSON.parse(text);
-					readJson(cy, jsonEles);
-				};
-				reader.readAsText(input.files[0]);
+				if (txtLbl == "=") {
+					modgraph.cy.edges('[label != "="]').forEach(e => {
+						addDoubleBond(modgraph.cy, e);
+					});
+				}
+
+				modgraph.cy.$(':selected').data("label", txtLbl);
+
+				var lbl = new Label(txtLbl);
+				modgraph.cy.$(':selected').data("color", lbl.type.color);
+				$("#modalRename").modal("hide");
 			});
+
+			// document.querySelector('#inputLoadCyGraph').addEventListener('change', function (event) {
+			// 	var input = event.target;
+
+			// 	var reader = new FileReader();
+			// 	reader.onload = function () {
+			// 		var text = reader.result;
+			// 		var jsonEles = JSON.parse(text);
+			// 		readJson(cy, jsonEles);
+			// 	};
+			// 	reader.readAsText(input.files[0]);
+			// });
 
 			document.querySelector('#inputLoadRule').addEventListener('change', function (event) {
 				var input = event.target;
@@ -133,14 +154,15 @@
 						"type": "ruleGML",
 						"data": text
 					};
-					mod_service.send("getRuleCoords", data, function(response) {
+					mod_service.send("getRuleCoords", data, function (response) {
 						try {
 							var jRule = GML.parse(response.ruleGML);
-						} catch(e) {
+						} catch (e) {
 							console.log(e);
 							return;
 						}
-						readRuleJson(cy, jRule);
+						// readRuleJson(cy, jRule);
+						modgraph.readJsonRule(jRule);
 					});
 				};
 				reader.readAsText(input.files[0]);
@@ -156,182 +178,209 @@
 						"type": "graphGML",
 						"data": text
 					};
-					mod_service.send("getGraphCoords", data, function(response) {
+					mod_service.send("getGraphCoords", data, function (response) {
 						try {
 							var jsonGraph = GML_GRAPH.parse(response.graphGML);
-						} catch(e) {
+						} catch (e) {
 							console.log(e);
 							return;
 						}
-						readModGraph(cy, jsonGraph);
+						// readModGraph(cy, jsonGraph);
+						modgraph.readJsonGraph(jsonGraph);
 					});
 				};
 				reader.readAsText(input.files[0]);
 			});
 
 			document.querySelector('#btnClearGraph').addEventListener('click', function (event) {
-				cy.elements().remove();
-				cy.id = 0;
+				modgraph.clear();
 			});
 
-			document.querySelector('#btnGraphCoord').addEventListener('click', function (event) {
-				var graph = new ModGraph(cy);
-				var data = {
-					"type": "graphGML",
-					"data": graph.toString()
-				};
-				mod_service.send("getGraphCoords", data, function(response) {
-					try {
-						var jsonGraph = GML_GRAPH.parse(response.graphGML);
-					} catch(e) {
-						console.log(e);
-						return;
-					}
-					readModGraph(cy, jsonGraph);
-				});
-			});
+			// document.querySelector('#btnGraphCoord').addEventListener('click', function (event) {
+			// 	var graph = new ModGraph(cy);
+			// 	var data = {
+			// 		"type": "graphGML",
+			// 		"data": graph.toString()
+			// 	};
+			// 	mod_service.send("getGraphCoords", data, function(response) {
+			// 		try {
+			// 			var jsonGraph = GML_GRAPH.parse(response.graphGML);
+			// 		} catch(e) {
+			// 			console.log(e);
+			// 			return;
+			// 		}
+			// 		readModGraph(cy, jsonGraph);
+			// 	});
+			// });
 
 
 			document.querySelector('#btnRuleCoord').addEventListener('click', function (event) {
-				var rule = new Rule(cy);
 				var data = {
 					"type": "ruleGML",
-					"data": rule.toString()
+					"data": modgraph.toGMLRule()
 				};
-				mod_service.send("getRuleCoords", data, function(response) {
+				mod_service.send("getRuleCoords", data, function (response) {
 					try {
 						console.log(response);
 						var jRule = GML.parse(response.ruleGML);
 						console.log(jRule);
-					} catch(e) {
+					} catch (e) {
 						console.log(e);
 						return;
 					}
-					readRuleJson(cy, jRule);
+					// readRuleJson(cy, jRule);
+					modgraph.readJsonRule(jRule);
 				});
 			});
 
+			document.querySelector('#btnViewerGraph').addEventListener('click', function (event) {
 
-			var tappedBefore = null;
-			var tappedTimeout;
-			cy.on('tap', function (event) {
-				var tappedNow = event.cyTarget;
-				if (tappedTimeout && tappedBefore) {
-					clearTimeout(tappedTimeout);
-				}
-				if (tappedBefore === tappedNow) {
-					tappedBefore = null;
-					pos = event.renderedPosition;
-					n = addNode(cy, pos);
-					n.select();
-				} else {
-					tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
-					tappedBefore = tappedNow;
-				}
 			});
+
+
+			document.querySelector('#btnViewerSpan').addEventListener('click', function (event) {
+				modgraph.cy.destroy();
+				var divGraph = document.getElementById("cy");
+				divGraph.style.display = "none";
+				var divSpan = document.getElementById('cySpan');
+				divSpan.style.display = "flex";
+
+				var btnGraphViewer = document.getElementById("btnViewerGraph");
+				var btnSpanViewer = document.getElementById("btnViewerSpan");
+				btnGraphViewer.classList.remove("active");
+				btnSpanViewer.classList.add("active");
+
+				var divL = document.getElementById("cySpanLeft");
+				var divK = document.getElementById("cySpanMiddle");
+				var divR = document.getElementById("cySpanRight");
+				
+				var test = new DPOSpan(divL, divK, divR);
+			});
+
+			document.querySelector('#btnViewerSpan').click();
+
 
 			document.addEventListener('keyup', function (event) {
+
+				// On delete
 				if (event.keyCode === 46) {
-					cy.$(':selected').remove();
-				}
-				if (event.keyCode === 82 && document.querySelector('#txtRelabel') !== document.activeElement) {
+					modgraph.cy.$(':selected').remove();
+				} // On 'r'
+				if (event.keyCode === 82 && !$("#modalRename").is(':visible')) {
+					$("#modalRename").modal();
 					document.querySelector('#txtRelabel').value = "";
 					document.querySelector('#txtRelabel').focus();
+
 				}
 			});
 
-			document.querySelector("#menu-toggle").addEventListener("click", function (e) {
-				e.preventDefault();
-				document.querySelector("#wrapper").classList.toggle("toggled");
-			});
 
 		});
 	</script>
 </head>
 
 <body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="#">MØDviz</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+			aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
 
-	<!-- Page Content -->
-	<div class="d-flex toggled" id="wrapper">
-		<div id="sidebar-wrapper" class="bg-light border-right">
-			<div class="sidebar-heading">The Rule Maker 3k</div>
-
-			<div class="list-group list-group-flush">
-					Relabel selected node/edge:
-					<input class="list-group-item form-control" type="text" id="txtRelabel" />
-				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#savemenu">Save Options</span></div>
-				<div id="savemenu" class="collapse">
-					<div class="list-group">
-						<button class="list-group-item list-group-item-action" type="button" id="save">Save CytoGraph</button>
-						<button class="list-group-item list-group-item-action" type="button" id="makeRule">Save Rule</button>
-						<button class="list-group-item list-group-item-action" type="button" id="saveModGraph">Save MØD Graph</button>
+		<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item dropdown active">
+					<a class="nav-link dropdown-toggle" id="fileDropDown" href="#" data-toggle="dropdown"
+						aria-haspopup="true" aria-expanded="false">File</a>
+					<div class="dropdown-menu" aria-labelledby="fileDropDown">
+						<label class="dropdown-item btn-file" style="cursor:pointer">
+							Load Graph <input id="inputLoadModGraph" type="file" style="display: none;">
+						</label>
+						<label class="dropdown-item btn-file" style="cursor:pointer">
+							Load Rule <input id="inputLoadRule" type="file" style="display: none;">
+						</label>
+						<div class="dropdown-divider"></div>
+						<button id="saveModGraph" class="dropdown-item">
+							Save Graph
+						</button>
+						<button id="makeRule" class="dropdown-item">
+							Save Rule
+						</button>
 					</div>
-				</div>
-				<div class="list-group-item list-group-item-action dropdown-toggle" data-toggle="collapse" href="#loadmenu">Load Options</div>
-				<div id="loadmenu" class="collapse">
-						<div class="input-group">
-								<div class="custom-file">
-									<input type="file" class="custom-file-input" id="inputLoadCyGraph">
-									<label class="custom-file-label">Cyto Graph</label>
-								</div>
-							</div>
-
-							<div class="input-group">
-									<div class="custom-file">
-										<input type="file" class="custom-file-input" id="inputLoadRule">
-										<label class="custom-file-label">Rule GML</label>
-									</div>
-								</div>
-
-								<div class="input-group">
-									<div class="custom-file">
-										<input type="file" class="custom-file-input" id="inputLoadModGraph">
-										<label class="custom-file-label">MØD Graph</label>
-									</div>
-								</div>
-					
-				</div>
-				<button class="list-group-item list-group-item-action" type="button" id="btnClearGraph">Clear Graph</button>
-				<button class="list-group-item list-group-item-action" type="button" id="btnGraphCoord">Use MØD Graph Coordinates</button>
-				<button class="list-group-item list-group-item-action" type="button" id="btnRuleCoord">Use MØD Rule Coordinates</button>
-			</div>
-				<!-- <ul class="list-group">
-					<li class="list-group-item border-0">
-						Relabel selected node/edge:
-						<input class="form-control" type="text" id="txtRelabel" />
-					</li>
-					<li class="list-group-item border-0">
-						<button class="btn btn-dark" id="save">SaveGraph</button>
-						<button class="btn btn-dark" id="makeRule">Make Rule</button>
-					</li>
-					<li class="list-group-item border-0">
-					</li>
-				</ul> -->
-				<!-- <div class="input-group">
-					<div class="input-group-prepend">
-						<span class="input-group-text" id="inputGroupFileAddon01">Load Graph</span>
+				</li>
+				<li class="nav-item dropdown active">
+					<a class="nav-link dropdown-toggle" id="editDropDown" href="#" data-toggle="dropdown"
+						aria-haspopup="true" aria-expanded="false">Edit</a>
+					<div class="dropdown-menu" aria-labelledby="editDropDown">
+						<button class="dropdown-item" data-toggle="modal" data-target="#modalRename">
+							Rename Selected
+						</button>
+						<div class="dropdown-divider"></div>
+						<button id="btnClearGraph" class="dropdown-item">
+							Clear Graph
+						</button>
 					</div>
-					<div class="custom-file">
-						<input type="file" class="custom-file-input" id="inputLoadCyGraph"
-							aria-describedby="inputGroupFileAddon01">
-						<label class="custom-file-label" for="inputGroupFile01">Choose file</label>
+				</li>
+				<li class="nav-item dropdown active">
+					<a class="nav-link dropdown-toggle" id="layoutDropDown" href="#" data-toggle="dropdown"
+						aria-haspopup="true" aria-expanded="false">Layout</a>
+					<div class="dropdown-menu" aria-labelledby="layoutDropDown">
+						<button id="btnRuleCoord" class="dropdown-item">
+							MØD Graph
+						</button>
+						<!-- <button class="dropdown-item" type="button" id="btnGraphCoord">Use MØD Graph Coordinates</button> -->
 					</div>
-				</div>
-				<div class="my-auto">
-					<button class="btn btn-dark" id="btnClearGraph">Clear Graph</button>
-				</div> -->
-			<!-- </div> -->
-			<!--
-					<textarea id="output" class="form-control" rows="5" cols="60" name="description">
+				</li>
+				<li class="nav-item dropdown active">
+					<a class="nav-link dropdown-toggle" id="viewerDropDown" href="#" data-toggle="dropdown"
+						aria-haspopup="true" aria-expanded="false">Viewer</a>
+					<div class="dropdown-menu" aria-labelledby="viewerDropDown">
+						<button id="btnViewerGraph" class="dropdown-item active">
+							Single Graph
+						</button>
+						<button id="btnViewerSpan" class="dropdown-item">
+							DPO Span
+						</button>
+					</div>
+				</li>
 
-				</textarea>
-			-->
+			</ul>
 		</div>
-		<div id="page-content-wrapper" class="container-fluid">
-			<button class="btn btn-primary" id="menu-toggle"><i class="fa fa-bars"></i></button>
-			<div id="cy"></div>
+	</nav>
+
+
+	<!-- Rename Nodes Modal-->
+	<div class="modal" id="modalRename" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Rename Selected Nodes</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<input class="form-control" type="text" id="txtRelabel" />
+				</div>
+				<div class="modal-footer">
+					<button id="btnRelabel" type="button" class="btn btn-primary">Save changes</button>
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				</div>
+			</div>
 		</div>
 	</div>
+	<!-- Page Content -->
+
+	<div id="page-content-wrapper" class="container-fluid">
+		<div id="cy"></div>
+
+		<div id="cySpan">
+			<div id="cySpanLeft" class="cySpanGraph" ></div>
+			<div id="cySpanMiddle" class="cySpanGraph"></div>
+			<div id="cySpanRight" class="cySpanGraph"></div>
+		</div>
+	</div>
+
 
 </body>
 

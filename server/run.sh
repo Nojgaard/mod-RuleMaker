@@ -1,3 +1,4 @@
 #!/bin/bash
-export PYTHONPATH=$HOME/Documents/uni/phd-projects/mod/dist/lib
-python3 mod_service.py "$@"
+export PYTHONPATH=$HOME/Projects/mod/stage/lib
+# python3 mod_service.py "$@"
+python3 mod_service.py 5000

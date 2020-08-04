@@ -455,3 +455,19 @@ class Rule {
         return output.join("\n");
     }
 }
+
+function addDoubleBond(cy, edge) {
+	console.log(edge)
+	
+	cy.add({
+	group: 'edges',
+	data: {
+		source: edge.source(), 
+		target: edge.target(),
+	    label: "=",
+	    id: -1,
+	    color: LabelType.STATIC.color
+	},
+	}).style({
+	});
+}

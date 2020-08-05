@@ -1,16 +1,22 @@
+// const LabelType = {
+//     STATIC: {
+//         color: "#AAAAAA"
+//     },
+//     REMOVE: {
+//         color: "#FF4136"
+//     },
+//     CREATE: {
+//         color: "#2ECC40"
+//     },
+//     RENAME: {
+//         color: "#7FDBFF"
+//     }
+// }
 const LabelType = {
-    STATIC: {
-        color: "#AAAAAA"
-    },
-    REMOVE: {
-        color: "#FF4136"
-    },
-    CREATE: {
-        color: "#2ECC40"
-    },
-    RENAME: {
-        color: "#7FDBFF"
-    }
+    STATIC: "STATIC",
+    REMOVE: "REMOVE",
+    CREATE: "CREATE",
+    RENAME: "RENAME"
 }
 
 class Label {    
@@ -33,10 +39,22 @@ class Label {
             this.right = splitLbl[1];
         }
     }
+
+    toString() {
+        if (this.left === "") {
+            return this.right;
+        } else if (this.right === "") {
+            return this.left;
+        } else {
+            return this.left + "/" + this.right;
+        }
+    }
 }
 
+
+
 class ModGraph {
-    constructor(container) {
+    constructor(container, styles = []) {
         this.cy = cytoscape({
             container: container,
 
@@ -51,10 +69,7 @@ class ModGraph {
                     selector: 'node[label]',
                     style: {
                         'label': 'data(label)',
-                        'background-color': 'data(color)',
-                        //                 "color": "#fff",
-                        //                 "text-outline-color": "black",
-                        //                 "text-outline-width": 1,
+                      //  'background-color': 'data(color)',
                         "text-valign": "center",
                         "text-halign": "center"
 
@@ -66,14 +81,65 @@ class ModGraph {
                     style: {
                         'curve-style': 'bezier',
                         'label': function (label) { return (label.data().label + "\n \u2060") },
-                        // 'text-margin-y': '0px',
-                        // 'text-margin-x': '0px',
                         'text-wrap': 'wrap',
-                        'line-color': 'data(color)',
+                       // 'line-color': 'data(color)',
                         "edge-text-rotation": "autorotate"
-                        // "color": "#fff",
-                        // "text-outline-color": "black",
-                        // "text-outline-width": 1
+                    }
+                },
+                {
+                    selector: 'node[type="STATIC"]',
+                    style: {
+                        'background-color': '#AAAAAA',
+
+                    }
+                },
+                {
+                    selector: 'node[type="RENAME"]',
+                    style: {
+                        'background-color': '#7FDBFF',
+
+                    }
+                },
+                {
+                    selector: 'node[type="CREATE"]',
+                    style: {
+                        'background-color': '#2ECC40',
+
+                    }
+                },
+                {
+                    selector: 'node[type="REMOVE"]',
+                    style: {
+                        'background-color': '#FF4136',
+
+                    }
+                },
+                {
+                    selector: 'edge[type="STATIC"]',
+                    style: {
+                        'line-color': '#AAAAAA',
+
+                    }
+                },
+                {
+                    selector: 'edge[type="RENAME"]',
+                    style: {
+                        'line-color': '#7FDBFF',
+
+                    }
+                },
+                {
+                    selector: 'edge[type="CREATE"]',
+                    style: {
+                        'line-color': '#2ECC40',
+
+                    }
+                },
+                {
+                    selector: 'edge[type="REMOVE"]',
+                    style: {
+                        'line-color': '#FF4136',
+
                     }
                 },
 
@@ -154,15 +220,15 @@ class ModGraph {
                         'opacity': 0
                     }
                 }
-            ],
+            ].concat(styles),
 
             elements: {
                 nodes: [
-                    { data: { id: 0, label: 'C/C+', color: LabelType.CREATE.color } },
-                    { data: { id: 1, label: 'C', color: LabelType.STATIC.color } },
+                    { data: { id: 0, label: 'C', type: "STATIC" } },
+                    { data: { id: 1, label: 'C', type: "STATIC" } },
                 ],
                 edges: [
-                    { data: { source: 0, target: 1, label: "/=", color: LabelType.STATIC.color } }
+                    { data: { source: 0, target: 1, label: "=", type: "STATIC" } }
                 ]
             },
         });
@@ -171,7 +237,7 @@ class ModGraph {
             complete: function (sourceNode, targetNode, addedEles) {
                 console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
                 var edge = addedEles[0];
-                edge.data("color", LabelType.STATIC.color);
+                edge.data("type", LabelType.STATIC);
                 edge.data("label", "-");
             }
         };
@@ -181,7 +247,7 @@ class ModGraph {
         var tappedTimeout;
         var self = this;
         this.cy.on('tap', function (event) {
-            if (event.tar !== self.cy) {
+            if (event.target !== self.cy) {
                 return;
             }
             var tappedNow = event.cyTarget;
@@ -215,13 +281,29 @@ class ModGraph {
             data: {
                 label: lbl,
                 id: this.cy.id,
-                color: LabelType.STATIC.color
+                type: LabelType.STATIC
             },
             renderedPosition: { x: pos.x, y: pos.y }
         });
         this.cy.id = this.cy.id + 1;
         return n;
     }
+
+    removeSelected() {
+        this.cy.$(':selected').remove();
+    }
+
+    renameSelected(rawLabel) {
+        // if (rawLabel == "=") {
+        //     this.cy.edges('[label != "="]').forEach(e => {
+        //         addDoubleBond(modgraph.cy, e);
+        //     });
+        // }
+
+        this.cy.$(':selected').data("label", rawLabel);
+
+        var lbl = new Label(rawLabel);
+        this.cy.$(':selected').data("type", lbl.type);    }
 
     readJsonGraph(jsonGraph) {
         var cy = this.cy
@@ -239,7 +321,7 @@ class ModGraph {
                 data: {
                     label: node.label,
                     id: id,
-                    color: LabelType.STATIC.color
+                    type: LabelType.STATIC
                 },
             });
         });
@@ -254,7 +336,7 @@ class ModGraph {
                     source: src,
                     target: tar,
                     label: lbl,
-                    color: LabelType.STATIC.color
+                    type: LabelType.STATIC
                 }
             });
         });
@@ -332,7 +414,7 @@ class ModGraph {
                 data: {
                     label: strLbl,
                     id: id,
-                    color: lbl.type.color
+                    type: lbl.type
                 }
             });
             node.position.x = node.position.x * 100.;
@@ -353,7 +435,7 @@ class ModGraph {
                     source: src,
                     target: tar,
                     label: strLbl,
-                    color: lbl.type.color
+                    type: lbl.type
                 }
             });
         });
@@ -459,15 +541,15 @@ class ModGraph {
 function addDoubleBond(cy, edge) {
 	console.log(edge)
 	
-	cy.add({
-	group: 'edges',
-	data: {
-		source: edge.source(), 
-		target: edge.target(),
-	    label: "=",
-	    id: -1,
-	    color: LabelType.STATIC.color
-	},
-	}).style({
-	});
+	// cy.add({
+	// group: 'edges',
+	// data: {
+	// 	source: edge.source(), 
+	// 	target: edge.target(),
+	//     label: "=",
+	//     id: -1,
+	//     type: LabelType.STATIC
+	// },
+	// }).style({
+	// });
 }

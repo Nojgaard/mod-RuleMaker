@@ -119,16 +119,7 @@
 			document.querySelector("#btnRelabel").addEventListener("click", function (event) {
 				var txtLbl = document.querySelector('#txtRelabel').value;
 
-				if (txtLbl == "=") {
-					modgraph.cy.edges('[label != "="]').forEach(e => {
-						addDoubleBond(modgraph.cy, e);
-					});
-				}
-
-				modgraph.cy.$(':selected').data("label", txtLbl);
-
-				var lbl = new Label(txtLbl);
-				modgraph.cy.$(':selected').data("color", lbl.type.color);
+				modgraph.renameSelected(txtLbl);
 				$("#modalRename").modal("hide");
 			});
 
@@ -254,7 +245,7 @@
 				var divK = document.getElementById("cySpanMiddle");
 				var divR = document.getElementById("cySpanRight");
 				
-				var test = new DPOSpan(divL, divK, divR);
+				modgraph = new DPOSpan(divL, divK, divR);
 			});
 
 			document.querySelector('#btnViewerSpan').click();
@@ -264,7 +255,7 @@
 
 				// On delete
 				if (event.keyCode === 46) {
-					modgraph.cy.$(':selected').remove();
+					modgraph.removeSelected();
 				} // On 'r'
 				if (event.keyCode === 82 && !$("#modalRename").is(':visible')) {
 					$("#modalRename").modal();

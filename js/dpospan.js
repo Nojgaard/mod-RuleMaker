@@ -1,9 +1,31 @@
 class DPOSpan {
     constructor(containerLeft, containerMiddle, containerRight) {
         console.log("Creating DPO Span");
-        this.L = new ModGraph(containerLeft);
-        this.K = new ModGraph(containerMiddle);
-        this.R = new ModGraph(containerRight);
+        this.L = new ModGraph(containerLeft, [
+            {
+                selector: '[type="CREATE"]',
+                style: {
+                    'visibility': 'hidden'
+                }
+            }
+        ]);
+        this.K = new ModGraph(containerMiddle, [
+            {
+                selector: '[type="CREATE"],[type="REMOVE"]',
+                style: {
+                    'visibility': 'hidden'
+                }
+            }
+        ]);
+        this.R = new ModGraph(containerRight, [
+            {
+                selector: '[type="REMOVE"]',
+                style: {
+                    'visibility': 'hidden'
+                }
+            }
+        ]);
+
 
         this.L.cy.nodes(":selectable").forEach(node => {
             console.log(node.position());
@@ -14,15 +36,37 @@ class DPOSpan {
         this.eh = [];
         ["L", "K", "R"].forEach(T => {
             let defaults = {
+                edgeParams(sourceNode, targetNode, i) {
+
+                    if (sourceNode.data('type') === LabelType.CREATE ||
+                        targetNode.data('type') === LabelType.CREATE) {
+                        var parsedLabel = new Label('/-');
+                    } else if (
+                        sourceNode.data('type') === LabelType.REMOVE ||
+                        targetNode.data('type') === LabelType.REMOVE) {
+                        var parsedLabel = new Label('-/');
+                    } else {
+                        var parsedLabel = new Label('-');
+                    }
+                    return {
+                        group: 'edges',
+                        data: {
+                            source: sourceNode.id(),
+                            target: targetNode.id(),
+                            label: '-',
+                            type: parsedLabel.type
+                        }
+                    }
+                },
                 complete: function (sourceNode, targetNode, addedEles) {
                     console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
                     var edge = addedEles[0];
-                    edge.data("color", LabelType.STATIC.color);
-                    edge.data("label", "-");
+                    // edge.data("color", LabelType.STATIC.color);
+                    // edge.data("label", "-");
                     var src = sourceNode.id();
                     var tar = targetNode.id();
                     ["L", "K", "R"].forEach(U => {
-                        if (T == U) { return; }
+                        if (T === U) { return; }
                         var ns = self[U].cy.nodes(`#${src}, #${tar}`);
                         if (ns.length < 2) {
                             return;
@@ -32,13 +76,15 @@ class DPOSpan {
                             classes.push("ghost-elem")
                         }
 
+
                         self[U].cy.add({
                             group: 'edges',
                             data: {
+                                id: edge.id(),
                                 source: sourceNode.id(),
                                 target: targetNode.id(),
-                                label: "-",
-                                color: LabelType.STATIC.color,
+                                label: edge.data("label"),
+                                type: edge.data("type")
                             },
                             classes: classes
                         });
@@ -128,7 +174,7 @@ class DPOSpan {
             if (tappedBefore === tappedNow) {
                 tappedBefore = null;
                 var pos = event.renderedPosition;
-                if (tar === self.L.cy){
+                if (tar === self.L.cy) {
                     self.addNode("C/", pos)
                 } else if (tar === self.R.cy) {
                     self.addNode("/C", pos);
@@ -153,8 +199,6 @@ class DPOSpan {
 
 
 
-        
-
         this.nodeId = this.K.cy.nodes().length;
     }
 
@@ -162,79 +206,55 @@ class DPOSpan {
         var label = new Label(rawLabel);
         var self = this
 
-        if (label.type === LabelType.STATIC) {
-            ["L", "K", "R"].forEach(T => {
-                var n = self[T].cy.add({
-                    group: "nodes",
-                    data: {
-                        label: rawLabel,
-                        id: this.nodeId,
-                        color: label.type.color,
-                        parsedLabel: label
-                    },
-                    renderedPosition: pos
-                });
-            });
-
-        } else {
-            var n = this.K.cy.add({
+        this.graphs().forEach(g => {
+            var nodeLabel = label.toString();
+            var n = g.cy.add({
                 group: "nodes",
                 data: {
-                    label: rawLabel,
+                    label: label.toString(),
                     id: this.nodeId,
-                    color: label.type.color,
-                    parsedLabel: label
+                    type: label.type,
                 },
-                classes: ["ghost-elem"],
                 renderedPosition: pos
             });
-            console.log(n);
-            if (label.type === LabelType.REMOVE) {
-                var n = this.L.cy.add({
-                    group: "nodes",
-                    data: {
-                        label: label.left,
-                        id: this.nodeId,
-                        color: label.type.color,
-                        parsedLabel: label
-                    },
-                    renderedPosition: pos
-                });
-            } else if (label.type === LabelType.CREATE) {
-                var n = this.R.cy.add({
-                    group: "nodes",
-                    data: {
-                        label: label.right,
-                        id: this.nodeId,
-                        color: label.type.color,
-                        parsedLabel: label
-                    },
-                    renderedPosition: pos
-                });
-            } else {
-                var n = this.L.cy.add({
-                    group: "nodes",
-                    data: {
-                        label: label.left,
-                        id: this.nodeId,
-                        color: label.type.color,
-                        parsedLabel: label
-                    },
-                    renderedPosition: pos
-                });
-                var n = this.R.cy.add({
-                    group: "nodes",
-                    data: {
-                        label: label.right,
-                        id: this.nodeId,
-                        color: label.type.color,
-                        parsedLabel: label
-                    },
-                    renderedPosition: pos
-                });
-            }
-        }
+        });
         this.nodeId = this.nodeId + 1;
 
+    }
+
+    renameSelected(rawLabel) {
+        var self = this;
+        var label = new Label(rawLabel);
+        this.graphs().forEach(g => {
+            g.cy.elements(":selected").forEach(e => {
+                var eLabel = label.toString();
+                e.data("label", eLabel);
+                e.data("type", label.type);
+            });
+        });
+
+        this.graphs().forEach(g => {
+            g.cy.edges().forEach(e => {
+                var srcT = e.source().data("type");
+                var tarT = e.target().data("type");
+                var eT = e.data("type");
+                if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+                    e.data("type", LabelType.CREATE);
+                } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+                    e.data("type", LabelType.REMOVE);
+                }
+            });
+        });
+    }
+
+    removeSelected() {
+        console.log("removing selected ", this.K.cy.elements(":selected").length);
+        this.graphs().forEach(g => {
+            g.cy.elements(":selected").remove();
+        });
+    }
+
+    graphs() {
+        return [this.L, this.K, this.R];
     }
 }

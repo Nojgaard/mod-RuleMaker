@@ -313,6 +313,7 @@ class DPOSpan {
             g.cy.add(modgraph.cy.elements(":selectable"));
             g.cy.fit();
         });
+
     }
 
     destroy() {

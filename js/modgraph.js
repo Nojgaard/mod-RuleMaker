@@ -300,10 +300,24 @@ class ModGraph {
         //     });
         // }
 
-        this.cy.$(':selected').data("label", rawLabel);
 
         var lbl = new Label(rawLabel);
-        this.cy.$(':selected').data("type", lbl.type);    }
+        this.cy.$(':selected').data("type", lbl.type);   
+
+        this.cy.$(':selected').data("label", lbl.toString());
+
+        this.cy.edges().forEach(e => {
+            var srcT = e.source().data("type");
+            var tarT = e.target().data("type");
+            var eT = e.data("type");
+            if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+                e.data("type", LabelType.CREATE);
+            } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+                e.data("type", LabelType.REMOVE);
+            }
+        });
+     }
+
 
     readJsonGraph(jsonGraph) {
         console.log("MODGRAPH: readJsonGraph()");
@@ -313,7 +327,7 @@ class ModGraph {
         var id = jsonGraph.nodes.length;
 
         cy.elements().remove();
-        cy.id = 0;
+        cy.id = id;
 
         jsonGraph.nodes.forEach(node => {
             var id = node.id;
@@ -411,7 +425,7 @@ class ModGraph {
             edges.get(id).right = edge.label;
         });
         cy.elements().remove();
-        cy.id = 0;
+        cy.id = nodes.size;
 
         var positions = [];
         nodes.forEach(function (node, key) {
@@ -424,7 +438,7 @@ class ModGraph {
             cy.add({
                 group: 'nodes',
                 data: {
-                    label: strLbl,
+                    label: lbl.toString(),
                     id: id,
                     type: lbl.type
                 }
@@ -450,7 +464,7 @@ class ModGraph {
                 data: {
                     source: src,
                     target: tar,
-                    label: strLbl,
+                    label:  lbl.toString(),
                     type: lbl.type
                 }
             });
@@ -470,17 +484,32 @@ class ModGraph {
         // lay.run();
     }
 
+    prepareLabels() {
+        this.cy.elements().forEach(e => {
+            var type = e.data("type");
+            var label = e.data("label");
+            if (type === LabelType.CREATE && label.slice(0,1) !== "/") {
+
+                label = "/" + label;
+            } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
+                label = label + "/";
+            }
+            e.data("rawLabel", label);
+        });
+    }
+
     toGMLGraph() {
+        this.prepareLabels();
         var out = [];
         out.push("graph [");
         this.cy.nodes(":selectable").forEach(node => {
-            var lbl = node.data("label");
+            var lbl = node.data("rawLabel");
             var id = node.data("id");
             out.push("    node [ id " + id + " label \"" + lbl + "\" ]");
         });
 
         this.cy.edges(":selectable").forEach(edge => {
-            var lbl = edge.data("label");
+            var lbl = edge.data("rawLabel");
             var src = edge.source().data("id");
             var tar = edge.target().data("id"); 
             out.push("    edge [ source " + src + " target " + tar + " label \"" + lbl + "\" ]");
@@ -490,6 +519,7 @@ class ModGraph {
     }
 
     toGMLRule() {
+        this.prepareLabels();
         var rule = {
             left: {
                 nodes: [],
@@ -506,7 +536,7 @@ class ModGraph {
         };
 
         this.cy.nodes(":selectable").forEach(node => {
-            var lbl = new Label(node.data("label"));
+            var lbl = new Label(node.data("rawLabel"));
             var id = node.data("id");
 
             if (lbl.type === LabelType.STATIC) {
@@ -522,7 +552,7 @@ class ModGraph {
         });
 
         this.cy.edges(":selectable").forEach(edge => {
-            var lbl = new Label(edge.data("label"));
+            var lbl = new Label(edge.data("rawLabel"));
             var src = edge.source().data("id");
             var tar = edge.target().data("id");
             if (lbl.type === LabelType.STATIC) {
@@ -555,8 +585,8 @@ class ModGraph {
     }
 
     readDPOSPan(span) {
-        this.id = span.K.cy.nodes().length;
         this.clear();
+        this.cy.id = span.K.cy.nodes().length;
         this.cy.add(span.K.cy.elements(":selectable"));
         this.cy.fit();
     }

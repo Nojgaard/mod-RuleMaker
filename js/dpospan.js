@@ -247,6 +247,12 @@ class DPOSpan {
         });
     }
 
+    clear() {
+        this.graphs().forEach(g => {
+            g.cy.elements().remove();
+        });
+    }
+
     removeSelected() {
         console.log("removing selected ", this.K.cy.elements(":selected").length);
         this.graphs().forEach(g => {
@@ -256,5 +262,62 @@ class DPOSpan {
 
     graphs() {
         return [this.L, this.K, this.R];
+    }
+
+    prepareContextLabels() {
+        this.K.cy.elements().forEach(e => {
+            var type = e.data("type");
+            var label = e.data("label");
+            if (type === LabelType.CREATE && label.slice(0,1) !== "/") {
+
+                label = "/" + label;
+            } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
+                label = label + "/";
+            }
+            e.data("label", label);
+        });
+    }
+
+    toGMLGraph() {
+        this.prepareContextLabels();
+        return this.K.toGMLGraph();
+    }
+
+    toGMLRule() {
+        console.log("DPOSpan: toGMLRule()");
+        this.prepareContextLabels();
+
+        return this.K.toGMLRule();
+    }
+
+    readJsonGraph(jsonGraph) {
+        console.log("DPOSPan: Reading JSON Graph");
+        //this.clear();
+        this.graphs().forEach(g => {
+            g.readJsonGraph(jsonGraph);
+        });
+        this.nodeId = this.K.cy.nodes().length;
+    }
+
+    readJsonRule(jsonRule) {
+        this.graphs().forEach(g => {
+            g.readJsonRule(jsonRule);
+        })
+        this.nodeId = this.K.cy.nodes().length;
+    }
+
+    readModGraph(modgraph) {
+        this.nodeId =  modgraph.cy.nodes().length + 1;
+        this.graphs().forEach(g => {
+            g.clear();
+            g.cy.add(modgraph.cy.elements(":selectable"));
+            g.cy.fit();
+        });
+    }
+
+    destroy() {
+        this.graphs().forEach(g => {
+            g.cy.destroy();
+        });
     }
 }

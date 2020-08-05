@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
-pegjs --format globals -e GML_GRAPH gml_graph.pegjs
-pegjs --format globals -e GML gml.pegjs
+node_modules/.bin/pegjs --format globals -e GML_GRAPH gml_graph.pegjs
+node_modules/.bin/pegjs --format globals -e GML gml.pegjs

@@ -1,5 +1,35 @@
 start
-  = "rule" _ "[" _ "ruleID" _ rule_id:string _ "left" _ left:container _ "context" _ context:container _ "right" _ right:container _ "]" _ { return {id: rule_id, left: left, context: context, right: right}; }
+  = "rule" _ "[" _ "ruleID" _ rule_id:string _ left:left_container? _ context:context_container? _ right:right_container? _ "]" _ 
+  { 
+    if (left === null) {
+      left = {
+        nodes: [],
+        edges: []
+      };
+    }
+    if (context === null) {
+      context = {
+        nodes: [],
+        edges: []
+      };
+    }
+    if(right === null) {
+      right = {
+        nodes: [],
+        edges: []
+      };
+    }
+    return {id: rule_id, left: left, context: context, right: right}; 
+  }
+
+left_container
+  = "left" _ left:container { return left; }
+
+context_container
+  = "context" _ context:container { return context; }
+
+right_container
+  = "right" _ right:container { return right; }
 
 container
   = "[" _ node_list:(node)* _ edge_list:(edge)* _ "]" { return {nodes: node_list, edges: edge_list} }

@@ -306,13 +306,14 @@ class ModGraph {
         this.cy.$(':selected').data("type", lbl.type);    }
 
     readJsonGraph(jsonGraph) {
+        console.log("MODGRAPH: readJsonGraph()");
         var cy = this.cy
         var nodes = new Map();
         var edge = new Map();
         var id = jsonGraph.nodes.length;
 
         cy.elements().remove();
-        cy.id = id;
+        cy.id = 0;
 
         jsonGraph.nodes.forEach(node => {
             var id = node.id;
@@ -342,9 +343,14 @@ class ModGraph {
         });
 
 
+        var positions = []
         jsonGraph.nodes.forEach(function (node) {
-            node.position.x = node.position.x * 100.;
-            node.position.y = node.position.y * 100.;
+            positions.push({
+                x: node.position.x * 100.,
+                y: node.position.y * 100.
+            })
+            // node.position.x = node.position.x * 100.;
+            // node.position.y = node.position.y * 100.;
 
         });
 
@@ -352,10 +358,15 @@ class ModGraph {
             name: 'preset',
             padding: 100,
             positions: function (node) {
-                return jsonGraph.nodes[node.id()].position;
+                // return jsonGraph.nodes[node.id()].position;
+                return positions[node.id()];
             }
         });
         lay.run();
+        this.cy.nodes(":selectable").forEach(n => {
+            console.log(n.position());
+        });
+       // this.cy.fit();
     }
 
     readJsonRule(jsonRule) {
@@ -400,8 +411,9 @@ class ModGraph {
             edges.get(id).right = edge.label;
         });
         cy.elements().remove();
-        cy.id = id;
+        cy.id = 0;
 
+        var positions = [];
         nodes.forEach(function (node, key) {
             var id = node.id;
             var strLbl = node.left + "/" + node.right;
@@ -417,8 +429,12 @@ class ModGraph {
                     type: lbl.type
                 }
             });
-            node.position.x = node.position.x * 100.;
-            node.position.y = node.position.y * 100.;
+            node.scaledPos = {
+                x: node.position.x * 100.,
+                y: node.position.y * 100.
+            };
+            // node.position.x = node.position.x * 100.;
+            // node.position.y = node.position.y * 100.;
         });
 
         edges.forEach(function (edge, key) {
@@ -445,7 +461,8 @@ class ModGraph {
             name: 'preset',
             padding: 100,
             positions: function (node) {
-                return nodes.get(parseInt(node.id())).position;
+                 return nodes.get(parseInt(node.id())).scaledPos;
+               // return positions[node.id()];
             }
         });
         lay.run();
@@ -535,6 +552,17 @@ class ModGraph {
         });
         output.push("]");
         return output.join("\n");
+    }
+
+    readDPOSPan(span) {
+        this.id = span.K.cy.nodes().length;
+        this.clear();
+        this.cy.add(span.K.cy.elements(":selectable"));
+        this.cy.fit();
+    }
+
+    destroy() {
+        this.cy.destroy();
     }
 }
 

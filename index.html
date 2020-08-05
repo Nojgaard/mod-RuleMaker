@@ -78,8 +78,8 @@
 		}
 
 		#cySpanMiddle{
-			border-left: 5px solid black;
-			border-right: 5px solid black;
+			border-left: 5px solid #343a40;
+			border-right: 5px solid #343a40;
 		}
 	</style>
 
@@ -225,12 +225,27 @@
 			});
 
 			document.querySelector('#btnViewerGraph').addEventListener('click', function (event) {
+				
 
+				var divGraph = document.getElementById("cy");
+				divGraph.style.display = "flex";
+				var divSpan = document.getElementById('cySpan');
+				divSpan.style.display = "none";
+
+				var btnGraphViewer = document.getElementById("btnViewerGraph");
+				var btnSpanViewer = document.getElementById("btnViewerSpan");
+				btnGraphViewer.classList.add("active");
+				btnSpanViewer.classList.remove("active");
+
+				var tmp = modgraph;
+				modgraph = new ModGraph(divGraph);
+				modgraph.readDPOSPan(tmp);
+				tmp.destroy();
 			});
 
 
 			document.querySelector('#btnViewerSpan').addEventListener('click', function (event) {
-				modgraph.cy.destroy();
+
 				var divGraph = document.getElementById("cy");
 				divGraph.style.display = "none";
 				var divSpan = document.getElementById('cySpan');
@@ -245,7 +260,10 @@
 				var divK = document.getElementById("cySpanMiddle");
 				var divR = document.getElementById("cySpanRight");
 				
+				var tmp = modgraph;
 				modgraph = new DPOSpan(divL, divK, divR);
+				modgraph.readModGraph(tmp);
+				tmp.destroy();
 			});
 
 			document.querySelector('#btnViewerSpan').click();

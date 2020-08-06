@@ -19,7 +19,7 @@ const LabelType = {
     RENAME: "RENAME"
 }
 
-class Label {    
+class Label {
     constructor(lbl) {
         var splitLbl = lbl.split("/");
         this.left = "";
@@ -54,7 +54,7 @@ class Label {
 
 
 class ModGraph {
-    constructor(container, styles = []) {
+    constructor(container, styles = [], addListeners = true) {
         this.cy = cytoscape({
             container: container,
 
@@ -69,7 +69,7 @@ class ModGraph {
                     selector: 'node[label]',
                     style: {
                         'label': 'data(label)',
-                      //  'background-color': 'data(color)',
+                        //  'background-color': 'data(color)',
                         "text-valign": "center",
                         "text-halign": "center"
 
@@ -82,7 +82,7 @@ class ModGraph {
                         'curve-style': 'bezier',
                         'label': function (label) { return (label.data().label + "\n \u2060") },
                         'text-wrap': 'wrap',
-                       // 'line-color': 'data(color)',
+                        // 'line-color': 'data(color)',
                         "edge-text-rotation": "autorotate"
                     }
                 },
@@ -140,6 +140,32 @@ class ModGraph {
                     style: {
                         'line-color': '#FF4136',
 
+                    }
+                },
+
+                // Some bond styles
+                {
+                    selector: 'edge[label="-"][?chemview]',
+                    style: {
+                        'label': ""
+                    }
+                },
+                {
+                    selector: 'edge[label="="][?chemview]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
+                        'source-endpoint': '0 25%',
+                        'target-endpoint': '0 25%'
+                    }
+                },
+                {
+                    selector: 'edge[viz="DBOND"]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
+                        'source-endpoint': '0 -25%',
+                        'target-endpoint': '0 -25%'
                     }
                 },
 
@@ -228,45 +254,65 @@ class ModGraph {
                     { data: { id: 1, label: 'C', type: "STATIC" } },
                 ],
                 edges: [
-                    { data: { source: 0, target: 1, label: "=", type: "STATIC" } }
+                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true } }
                 ]
             },
         });
 
-        let defaults = {
-            complete: function (sourceNode, targetNode, addedEles) {
-                console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
-                var edge = addedEles[0];
-                edge.data("type", LabelType.STATIC);
-                edge.data("label", "-");
-            }
-        };
-        this.eh = this.cy.edgehandles(defaults);
-
-        var tappedBefore = null;
-        var tappedTimeout;
         var self = this;
-        this.cy.on('tap', function (event) {
-            if (event.target !== self.cy) {
-                return;
+        if (addListeners) {
+            let defaults = {
+                complete: function (sourceNode, targetNode, addedEles) {
+                    console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
+                    var edge = addedEles[0];
+                    edge.data("type", LabelType.STATIC);
+                    edge.data("label", "-");
+                    edge.data("chemview", self.showChemView);
+                }
+            };
+            this.eh = this.cy.edgehandles(defaults);
+
+            var tappedBefore = null;
+            var tappedTimeout;
+            var self = this;
+            this.cy.on('tap', function (event) {
+                if (event.target !== self.cy) {
+                    return;
+                }
+                var tappedNow = event.cyTarget;
+                if (tappedTimeout && tappedBefore) {
+                    clearTimeout(tappedTimeout);
+                }
+                if (tappedBefore === tappedNow) {
+                    tappedBefore = null;
+                    var pos = event.renderedPosition;
+                    // n = addNode(cy, pos);
+                    var n = self.addNode("C", pos);
+                    n.select();
+                } else {
+                    tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
+                    tappedBefore = tappedNow;
+                }
+            });
+
+            var onSelect = function (event) {
+                var src = event.target.source().id();
+                var tar = event.target.target().id();
+                var sel = "[source = \"" + src + "\"][target = \"" + tar + "\"]";
+                var eles = event.cy.edges(sel);
+                if (event.target.selected()) {
+                    eles.select();
+                } else {
+                    eles.unselect();
+                }
             }
-            var tappedNow = event.cyTarget;
-            if (tappedTimeout && tappedBefore) {
-                clearTimeout(tappedTimeout);
-            }
-            if (tappedBefore === tappedNow) {
-                tappedBefore = null;
-                var pos = event.renderedPosition;
-                // n = addNode(cy, pos);
-                var n = self.addNode("C", pos);
-                n.select();
-            } else {
-                tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
-                tappedBefore = tappedNow;
-            }
-        });
+            this.cy.on("select", "edge", onSelect);
+            this.cy.on("unselect", "edge", onSelect);
+        }
 
         this.cy.id = this.cy.nodes(":selectable").length
+        this.showChemView = true;
+        this.addBondEdges();
     }
 
     clear() {
@@ -302,7 +348,7 @@ class ModGraph {
 
 
         var lbl = new Label(rawLabel);
-        this.cy.$(':selected').data("type", lbl.type);   
+        this.cy.$(':selected').data("type", lbl.type);
 
         this.cy.$(':selected').data("label", lbl.toString());
 
@@ -316,7 +362,9 @@ class ModGraph {
                 e.data("type", LabelType.REMOVE);
             }
         });
-     }
+
+        this.addBondEdges(true);
+    }
 
 
     readJsonGraph(jsonGraph) {
@@ -325,6 +373,7 @@ class ModGraph {
         var nodes = new Map();
         var edge = new Map();
         var id = jsonGraph.nodes.length;
+        var self = this;
 
         cy.elements().remove();
         cy.id = id;
@@ -351,7 +400,8 @@ class ModGraph {
                     source: src,
                     target: tar,
                     label: lbl,
-                    type: LabelType.STATIC
+                    type: LabelType.STATIC,
+                    chemview: self.showChemView
                 }
             });
         });
@@ -368,6 +418,8 @@ class ModGraph {
 
         });
 
+        this.addBondEdges();
+
         var lay = cy.layout({
             name: 'preset',
             padding: 100,
@@ -380,7 +432,7 @@ class ModGraph {
         this.cy.nodes(":selectable").forEach(n => {
             console.log(n.position());
         });
-       // this.cy.fit();
+        // this.cy.fit();
     }
 
     readJsonRule(jsonRule) {
@@ -388,6 +440,8 @@ class ModGraph {
         var nodes = new Map();
         var edges = new Map();
         var id = 0;
+        var self = this;
+        //console.log(jsonRule);
         ["left", "context", "right"].forEach(T => {
             jsonRule[T].nodes.forEach(node => {
                 if (node.id >= id) { id = node.id + 1; }
@@ -464,19 +518,22 @@ class ModGraph {
                 data: {
                     source: src,
                     target: tar,
-                    label:  lbl.toString(),
-                    type: lbl.type
+                    label: lbl.toString(),
+                    type: lbl.type,
+                    chemview: self.showChemView
                 }
             });
         });
+
+        this.addBondEdges();
 
         var nodes_ = nodes;
         var lay = cy.layout({
             name: 'preset',
             padding: 100,
             positions: function (node) {
-                 return nodes.get(parseInt(node.id())).scaledPos;
-               // return positions[node.id()];
+                return nodes.get(parseInt(node.id())).scaledPos;
+                // return positions[node.id()];
             }
         });
         lay.run();
@@ -488,13 +545,36 @@ class ModGraph {
         this.cy.elements().forEach(e => {
             var type = e.data("type");
             var label = e.data("label");
-            if (type === LabelType.CREATE && label.slice(0,1) !== "/") {
+            if (type === LabelType.CREATE && label.slice(0, 1) !== "/") {
 
                 label = "/" + label;
             } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
                 label = label + "/";
             }
             e.data("rawLabel", label);
+        });
+    }
+
+    addBondEdges(selectCreated = false) {
+        if (!this.showChemView) {
+            return;
+        }
+        this.cy.edges('[viz]').remove();
+        var doubleBonds = this.cy.edges(':selectable[label="="]');
+        console.log(doubleBonds.length);
+        doubleBonds.forEach(edge => {
+            var vizedge = this.cy.add({
+                group: 'edges',
+                data: {
+                    source: edge.source().id(),
+                    target: edge.target().id(),
+                    type: edge.data("type"),
+                    viz: "DBOND"
+                }
+            });
+            if (selectCreated) {
+                vizedge.select();
+            }
         });
     }
 
@@ -508,10 +588,10 @@ class ModGraph {
             out.push("    node [ id " + id + " label \"" + lbl + "\" ]");
         });
 
-        this.cy.edges(":selectable").forEach(edge => {
+        this.cy.edges(":selectable[label]").forEach(edge => {
             var lbl = edge.data("rawLabel");
             var src = edge.source().data("id");
-            var tar = edge.target().data("id"); 
+            var tar = edge.target().data("id");
             out.push("    edge [ source " + src + " target " + tar + " label \"" + lbl + "\" ]");
         });
         out.push("]");
@@ -525,11 +605,11 @@ class ModGraph {
                 nodes: [],
                 edges: []
             },
-             context: {
+            context: {
                 nodes: [],
                 edges: []
             },
-             right: {
+            right: {
                 nodes: [],
                 edges: []
             }
@@ -551,7 +631,7 @@ class ModGraph {
             }
         });
 
-        this.cy.edges(":selectable").forEach(edge => {
+        this.cy.edges(":selectable[label]").forEach(edge => {
             var lbl = new Label(edge.data("rawLabel"));
             var src = edge.source().data("id");
             var tar = edge.target().data("id");
@@ -591,23 +671,21 @@ class ModGraph {
         this.cy.fit();
     }
 
+    toggleChemView() {
+        if (this.showChemView) {
+            this.showChemView = false;
+            this.cy.edges('[viz]').remove();
+
+        } else {
+            this.showChemView = true;
+            this.addBondEdges();
+        }
+
+        this.cy.edges(":selectable[^viz]").data('chemview', this.showChemView);
+    }
+
     destroy() {
         this.cy.destroy();
     }
 }
 
-function addDoubleBond(cy, edge) {
-	console.log(edge)
-	
-	// cy.add({
-	// group: 'edges',
-	// data: {
-	// 	source: edge.source(), 
-	// 	target: edge.target(),
-	//     label: "=",
-	//     id: -1,
-	//     type: LabelType.STATIC
-	// },
-	// }).style({
-	// });
-}

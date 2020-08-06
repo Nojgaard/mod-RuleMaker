@@ -1,5 +1,7 @@
 class DPOSpan {
+
     constructor(containerLeft, containerMiddle, containerRight) {
+        var addListeners = false;
         console.log("Creating DPO Span");
         this.L = new ModGraph(containerLeft, [
             {
@@ -8,7 +10,7 @@ class DPOSpan {
                     'visibility': 'hidden'
                 }
             }
-        ]);
+        ], addListeners);
         this.K = new ModGraph(containerMiddle, [
             {
                 selector: '[type="CREATE"],[type="REMOVE"]',
@@ -16,7 +18,7 @@ class DPOSpan {
                     'visibility': 'hidden'
                 }
             }
-        ]);
+        ], addListeners);
         this.R = new ModGraph(containerRight, [
             {
                 selector: '[type="REMOVE"]',
@@ -24,12 +26,7 @@ class DPOSpan {
                     'visibility': 'hidden'
                 }
             }
-        ]);
-
-
-        this.L.cy.nodes(":selectable").forEach(node => {
-            console.log(node.position());
-        });
+        ], addListeners);
 
         var self = this;
 
@@ -54,7 +51,8 @@ class DPOSpan {
                             source: sourceNode.id(),
                             target: targetNode.id(),
                             label: '-',
-                            type: parsedLabel.type
+                            type: parsedLabel.type,
+                            chemview: self.K.showChemView
                         }
                     }
                 },
@@ -84,7 +82,8 @@ class DPOSpan {
                                 source: sourceNode.id(),
                                 target: targetNode.id(),
                                 label: edge.data("label"),
-                                type: edge.data("type")
+                                type: edge.data("type"),
+                                chemview: edge.data("chemview")
                             },
                             classes: classes
                         });
@@ -92,7 +91,7 @@ class DPOSpan {
                     });
                 }
             };
-            self[T].eh.destroy();
+            // self[T].eh.destroy();
             var eh = self[T].cy.edgehandles(defaults);
             self.eh.push(eh);
         });
@@ -245,6 +244,10 @@ class DPOSpan {
                 }
             });
         });
+
+        this.graphs().forEach(g => {
+            g.addBondEdges();
+        });
     }
 
     clear() {
@@ -314,6 +317,12 @@ class DPOSpan {
             g.cy.fit();
         });
 
+    }
+
+    toggleChemView() {
+        this.L.toggleChemView();
+        this.K.toggleChemView();
+        this.R.toggleChemView();
     }
 
     destroy() {

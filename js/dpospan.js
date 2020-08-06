@@ -227,9 +227,9 @@ class DPOSpan {
         this.graphs().forEach(g => {
             g.cy.elements(":selected").forEach(e => {
                 var eLabel = label.toString();
-                if (label.type === LabelType.RENAME && g === L) {
+                if (label.type === LabelType.RENAME && g === self.L) {
                     eLabel = label.left;
-                } else if (label.type === LabelType.RENAME && g === R) {
+                } else if (label.type === LabelType.RENAME && g === self.R) {
                     eLabel = label.right;
                 }
                 e.data("label", eLabel);
@@ -250,9 +250,6 @@ class DPOSpan {
             });
         });
 
-        this.graphs().forEach(g => {
-            g.addBondEdges();
-        });
     }
 
     clear() {
@@ -344,7 +341,6 @@ class DPOSpan {
                 e.data("label", lbl.left);
             }
         });
-        this.L.addBondEdges();
 
         this.R.cy.elements("[label]").forEach(e => {
             var lbl = new Label(e.data("label"));
@@ -352,7 +348,6 @@ class DPOSpan {
                 e.data("label", lbl.right);
             }
         });
-        this.R.addBondEdges();
 
     }
 

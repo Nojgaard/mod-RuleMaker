@@ -153,73 +153,33 @@ class ModGraph {
                 {
                     selector: 'edge[label="="][?chemview]',
                     style: {
-                        'curve-style': 'straight',
+                        'curve-style': 'segments',
                         'label': "",
-                        'source-endpoint': '0 15%',
-                        // 'source-endpoint': function(e) {
-                        //     console.log(e.target());
-                        //     var dx = e.source().position().x - e.target().position().x;
-                        //     var dy = e.source().position().y - e.target().position().y;
-                        //     console.log(e.source().data("offset"));
-                        //     return e.source().position().x + ' 25%';
-                        // },
-                        'target-endpoint': '0 15%'
-                    }
-                },
-                {
-                    selector: 'edge[viz="DBOND"]',
-                    style: {
-                        'curve-style': 'straight',
-                        'label': "",
-                        'source-endpoint': '0 -15%',
-                        'target-endpoint': '0 -15%'
+                        'segment-weights': '0 1.02 1.02 -0.02 1 ',
+                        'segment-distances': '5 5 -5 -5 -5 -5',
+                        //'segment-weights': '1.02 1.02 -0.02 ',
+                        //'segment-distances': '5 -5 -5 -5',
                     }
                 },
                 {
                     selector: 'edge[label=":"][?chemview]',
                     style: {
-                        'curve-style': 'straight',
+                        'curve-style': 'segments',
                         'label': "",
-                        'source-endpoint': '0 25%',
-                        'target-endpoint': '0 25%'
-                    }
-                },
-                {
-                    selector: 'edge[viz="ABOND"]',
-                    style: {
-                        'curve-style': 'straight',
-                        'label': "",
-                        'source-endpoint': '0 -25%',
-                        'target-endpoint': '0 -25%',
+                        'segment-weights': '0 1.02 1.02 -0.02 1 ',
+                        'segment-distances': '5 5 -5 -5 -5 -5',
                         'line-style': 'dotted'
                     }
                 },
                 {
                     selector: 'edge[label="#"][?chemview]',
                     style: {
-                        'curve-style': 'straight',
-                        'label': ""
-                    }
-                },
-                {
-                    selector: 'edge[viz="TBOND-1"]',
-                    style: {
-                        'curve-style': 'straight',
+                        'curve-style': 'segments',
                         'label': "",
-                        'source-endpoint': '0 -25%',
-                        'target-endpoint': '0 -25%'
+                        'segment-weights': '0 1.02 1.02 -0.02 -0.02 ',
+                        'segment-distances': '5 5 -5 -5 0',
                     }
                 },
-                {
-                    selector: 'edge[viz="TBOND-2"]',
-                    style: {
-                        'curve-style': 'straight',
-                        'label': "",
-                        'source-endpoint': '0 25%',
-                        'target-endpoint': '0 25%'
-                    }
-                },
-
                 // Some DPO Span Styles
                 {
                     selector: '.ghost-elem',
@@ -372,7 +332,6 @@ class ModGraph {
 
         this.cy.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
-        this.addBondEdges();
     }
 
     clear() {
@@ -422,8 +381,6 @@ class ModGraph {
                 e.data("type", LabelType.REMOVE);
             }
         });
-
-        this.addBondEdges(true);
     }
 
 
@@ -477,8 +434,6 @@ class ModGraph {
             // node.position.y = node.position.y * 100.;
 
         });
-
-        this.addBondEdges();
 
         var lay = cy.layout({
             name: 'preset',
@@ -585,8 +540,6 @@ class ModGraph {
             });
         });
 
-        this.addBondEdges();
-
         var nodes_ = nodes;
         var lay = cy.layout({
             name: 'preset',
@@ -612,75 +565,6 @@ class ModGraph {
                 label = label + "/";
             }
             e.data("rawLabel", label);
-        });
-    }
-
-    addBondEdges(selectCreated = false) {
-        if (!this.showChemView) {
-            return;
-        }
-        this.cy.edges('[viz]').remove();
-        var doubleBonds = this.cy.edges(':selectable[label="="]');
-        console.log(doubleBonds.length);
-        doubleBonds.forEach(edge => {
-            var vizedge = this.cy.add({
-                group: 'edges',
-                data: {
-                    source: edge.source().id(),
-                    target: edge.target().id(),
-                    type: edge.data("type"),
-                    viz: "DBOND"
-                }
-            });
-            if (selectCreated && edge.selected()) {
-                vizedge.select();
-            }
-        });
-
-        var aromaticBonds = this.cy.edges(':selectable[label=":"]');
-        aromaticBonds.forEach(edge => {
-            var vizedge = this.cy.add({
-                group: 'edges',
-                data: {
-                    source: edge.source().id(),
-                    target: edge.target().id(),
-                    type: edge.data("type"),
-                    viz: "ABOND"
-                }
-            });
-            if (selectCreated && edge.selected()) {
-                vizedge.select();
-            }
-        });
-
-        var tripleBonds = this.cy.edges(':selectable[label="#"]');
-        tripleBonds.forEach(edge => {
-            var vizedge = this.cy.add({
-
-                edges: [
-                    {
-                        data: {
-                            source: edge.source().id(),
-                            target: edge.target().id(),
-                            type: edge.data("type"),
-                            viz: "TBOND-1"
-                        }
-                    },
-                    {
-                        data: {
-                            source: edge.source().id(),
-                            target: edge.target().id(),
-                            type: edge.data("type"),
-                            viz: "TBOND-2"
-                        }
-                    }
-                ]
-            });
-            if (selectCreated && edge.selected()) {
-                vizedge.forEach(e => {
-                    e.select();
-                });
-            }
         });
     }
 
@@ -778,16 +662,9 @@ class ModGraph {
     }
 
     toggleChemView() {
-        if (this.showChemView) {
-            this.showChemView = false;
-            this.cy.edges('[viz]').remove();
 
-        } else {
-            this.showChemView = true;
-            this.addBondEdges();
-        }
-
-        this.cy.edges(":selectable[^viz]").data('chemview', this.showChemView);
+        this.showChemView = !this.showChemView;
+        this.cy.edges(":selectable").data('chemview', this.showChemView);
     }
 
     destroy() {

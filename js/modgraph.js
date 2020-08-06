@@ -155,8 +155,15 @@ class ModGraph {
                     style: {
                         'curve-style': 'straight',
                         'label': "",
-                        'source-endpoint': '0 25%',
-                        'target-endpoint': '0 25%'
+                        'source-endpoint': '0 15%',
+                        // 'source-endpoint': function(e) {
+                        //     console.log(e.target());
+                        //     var dx = e.source().position().x - e.target().position().x;
+                        //     var dy = e.source().position().y - e.target().position().y;
+                        //     console.log(e.source().data("offset"));
+                        //     return e.source().position().x + ' 25%';
+                        // },
+                        'target-endpoint': '0 15%'
                     }
                 },
                 {
@@ -164,8 +171,52 @@ class ModGraph {
                     style: {
                         'curve-style': 'straight',
                         'label': "",
+                        'source-endpoint': '0 -15%',
+                        'target-endpoint': '0 -15%'
+                    }
+                },
+                {
+                    selector: 'edge[label=":"][?chemview]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
+                        'source-endpoint': '0 25%',
+                        'target-endpoint': '0 25%'
+                    }
+                },
+                {
+                    selector: 'edge[viz="ABOND"]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
+                        'source-endpoint': '0 -25%',
+                        'target-endpoint': '0 -25%',
+                        'line-style': 'dotted'
+                    }
+                },
+                {
+                    selector: 'edge[label="#"][?chemview]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': ""
+                    }
+                },
+                {
+                    selector: 'edge[viz="TBOND-1"]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
                         'source-endpoint': '0 -25%',
                         'target-endpoint': '0 -25%'
+                    }
+                },
+                {
+                    selector: 'edge[viz="TBOND-2"]',
+                    style: {
+                        'curve-style': 'straight',
+                        'label': "",
+                        'source-endpoint': '0 25%',
+                        'target-endpoint': '0 25%'
                     }
                 },
 
@@ -308,6 +359,15 @@ class ModGraph {
             }
             this.cy.on("select", "edge", onSelect);
             this.cy.on("unselect", "edge", onSelect);
+
+            var i = 1;
+            var onDrag = function (event) {
+
+                event.cy.nodes(":grabbed").forEach(node => {
+                    node.data("offset", String(i) + "%");
+                    i = i + 1;
+                });
+            }
         }
 
         this.cy.id = this.cy.nodes(":selectable").length
@@ -435,7 +495,7 @@ class ModGraph {
         // this.cy.fit();
     }
 
-    readJsonRule(jsonRule) {
+    readJsonRule(jsonRule, lblFun = function (lbl) { return lbl.toString() }) {
         var cy = this.cy
         var nodes = new Map();
         var edges = new Map();
@@ -492,7 +552,7 @@ class ModGraph {
             cy.add({
                 group: 'nodes',
                 data: {
-                    label: lbl.toString(),
+                    label: lblFun(lbl),
                     id: id,
                     type: lbl.type
                 }
@@ -518,7 +578,7 @@ class ModGraph {
                 data: {
                     source: src,
                     target: tar,
-                    label: lbl.toString(),
+                    label: lblFun(lbl),
                     type: lbl.type,
                     chemview: self.showChemView
                 }
@@ -572,8 +632,54 @@ class ModGraph {
                     viz: "DBOND"
                 }
             });
-            if (selectCreated) {
+            if (selectCreated && edge.selected()) {
                 vizedge.select();
+            }
+        });
+
+        var aromaticBonds = this.cy.edges(':selectable[label=":"]');
+        aromaticBonds.forEach(edge => {
+            var vizedge = this.cy.add({
+                group: 'edges',
+                data: {
+                    source: edge.source().id(),
+                    target: edge.target().id(),
+                    type: edge.data("type"),
+                    viz: "ABOND"
+                }
+            });
+            if (selectCreated && edge.selected()) {
+                vizedge.select();
+            }
+        });
+
+        var tripleBonds = this.cy.edges(':selectable[label="#"]');
+        tripleBonds.forEach(edge => {
+            var vizedge = this.cy.add({
+
+                edges: [
+                    {
+                        data: {
+                            source: edge.source().id(),
+                            target: edge.target().id(),
+                            type: edge.data("type"),
+                            viz: "TBOND-1"
+                        }
+                    },
+                    {
+                        data: {
+                            source: edge.source().id(),
+                            target: edge.target().id(),
+                            type: edge.data("type"),
+                            viz: "TBOND-2"
+                        }
+                    }
+                ]
+            });
+            if (selectCreated && edge.selected()) {
+                vizedge.forEach(e => {
+                    e.select();
+                });
             }
         });
     }

@@ -227,6 +227,11 @@ class DPOSpan {
         this.graphs().forEach(g => {
             g.cy.elements(":selected").forEach(e => {
                 var eLabel = label.toString();
+                if (label.type === LabelType.RENAME && g === L) {
+                    eLabel = label.left;
+                } else if (label.type === LabelType.RENAME && g === R) {
+                    eLabel = label.right;
+                }
                 e.data("label", eLabel);
                 e.data("type", label.type);
             });
@@ -303,9 +308,25 @@ class DPOSpan {
     }
 
     readJsonRule(jsonRule) {
-        this.graphs().forEach(g => {
-            g.readJsonRule(jsonRule);
-        })
+        console.log("DPOSpan.readJsonRule()")
+        this.L.readJsonRule(jsonRule, function(lbl) {
+            if (lbl.type === LabelType.RENAME) {
+                return lbl.left;
+            } else {
+                return lbl.toString();
+            }
+        });
+        this.K.readJsonRule(jsonRule);
+        this.R.readJsonRule(jsonRule, function(lbl) {
+            if (lbl.type === LabelType.RENAME) {
+                return lbl.right;
+            } else {
+                return lbl.toString();
+            }
+        });
+        // this.graphs().forEach(g => {
+        //     g.readJsonRule(jsonRule);
+        // })
         this.nodeId = this.K.cy.nodes().length;
     }
 
@@ -316,6 +337,22 @@ class DPOSpan {
             g.cy.add(modgraph.cy.elements(":selectable"));
             g.cy.fit();
         });
+
+        this.L.cy.elements("[label]").forEach(e => {
+            var lbl = new Label(e.data("label"));
+            if (lbl.type === LabelType.RENAME) {
+                e.data("label", lbl.left);
+            }
+        });
+        this.L.addBondEdges();
+
+        this.R.cy.elements("[label]").forEach(e => {
+            var lbl = new Label(e.data("label"));
+            if (lbl.type === LabelType.RENAME) {
+                e.data("label", lbl.right);
+            }
+        });
+        this.R.addBondEdges();
 
     }
 

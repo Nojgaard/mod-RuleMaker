@@ -1,5 +1,5 @@
 start
-  = "rule" _ "[" _ "ruleID" _ rule_id:string _ left:left_container? _ context:context_container? _ right:right_container? _ "]" _ 
+  = "rule" _ "[" _ "ruleID" _ rule_id:string _ left:left_container? _ context:context_container? _ right:right_container? _ constraints:(adjacency)* _ "]" _ 
   { 
     if (left === null) {
       left = {
@@ -19,7 +19,7 @@ start
         edges: []
       };
     }
-    return {id: rule_id, left: left, context: context, right: right}; 
+    return {id: rule_id, left: left, context: context, right: right, constraints: constraints}; 
   }
 
 left_container
@@ -40,11 +40,29 @@ node
 edge
   = _ "edge" _ "[" _ "source" _ src:integer _ "target" _ tar:integer _ "label" _ lbl:string _ "]" _ { return {src: src, tar: tar, label: lbl}; }
 
+adjacency
+  = _ 'constrainAdj' _ "[" _ "id" _ id:integer _ "op" _ op:string _ "count" _ count:integer _ "nodeLabels" _ nodeLabels:label_list _ "edgeLabels" _ edgeLabels:label_list _ "]"
+  {
+    return {
+      id: id,
+      op: op,
+      count: count,
+      nodeLabels: nodeLabels,
+      edgeLabels: edgeLabels
+    };
+  }
+
+label_list
+  = "[" _ labels:(label)* _ "]" { return labels; }
+
+label
+  = _ "label" _ label:string _ { return label; }
+
 coord
   = "vis2d" _ "[" _ "x" _ x:float _ "y" _ y:float _ "]" { return {x: x, y: y}; }
 
 string
-  = "\"" str:[a-zA-Z0-9\+\=\-#/& ]* "\"" { return str.join(""); }
+  = "\"" str:[a-zA-Z0-9\+\=\-#/&<>\: ]* "\"" { return str.join(""); }
 
 integer "integer"
   =  digits:[0-9]+  { return parseInt(digits.join(""), 10); }

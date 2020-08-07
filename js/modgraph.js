@@ -12,6 +12,7 @@
 //         color: "#7FDBFF"
 //     }
 // }
+
 const LabelType = {
     STATIC: "STATIC",
     REMOVE: "REMOVE",
@@ -79,7 +80,9 @@ class ModGraph {
                 {
                     selector: 'edge[label]',
                     style: {
-                        'curve-style': 'bezier',
+                        //  'curve-style': 'bezier',
+                        'curve-style': 'haystack',
+                        'haystack-radius': '0',
                         'label': function (label) { return (label.data().label + "\n \u2060") },
                         'text-wrap': 'wrap',
                         // 'line-color': 'data(color)',
@@ -261,13 +264,25 @@ class ModGraph {
 
             elements: {
                 nodes: [
-                    { data: { id: 0, label: 'C', type: "STATIC" } },
+                    {
+                        data: {
+                            id: 0, label: 'C', type: "STATIC",
+                            constraints: [
+                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] },
+                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] }
+                            ]
+                        }
+                    },
                     { data: { id: 1, label: 'C', type: "STATIC" } },
                 ],
                 edges: [
                     { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true } }
                 ]
             },
+            // renderer: {
+            //     name: 'canvas',
+            //     showFps: true
+            //   },
         });
 
         var self = this;
@@ -332,6 +347,62 @@ class ModGraph {
 
         this.cy.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
+
+        this.poppers = [];
+        this.updatePoppers();
+
+
+    }
+
+    updatePoppers() {
+        console.log("Updating Poppers");
+        this.poppers.forEach(p => {
+            p.destroy();
+        });
+
+        var makeTable = function (constraints) {
+            var out = [];
+            out.push("<div class='constraintDiv'><table class='table table-dark'><tbody>");
+
+            constraints.forEach(c => {
+                out.push(`
+                <tr class="row">
+                    <td >${c.op}</td>
+                    <td >${c.count}</td>
+                    <td >[ ${String(c.nodeLabels)} ]</td>
+                    <td >[ ${String(c.edgeLabels)} ]</td>
+                </tr>
+                `);
+            });
+            out.push("</tbody></table></div>");
+            return out.join("\n");
+        }
+
+        this.cy.nodes("[constraints]").forEach(node => {
+            console.log("adding popper");
+            let popper = node.popper({
+                content: () => {
+                    let div = document.createElement('div');
+
+                    div.innerHTML = makeTable(node.data("constraints"));
+
+                    document.body.appendChild(div);
+
+                    return div;
+                },
+                popper: { placement: 'bottom' }
+            });
+
+            let update = () => {
+                popper.scheduleUpdate();
+            };
+
+            node.on('position', update);
+
+            this.cy.on('pan zoom resize', update);
+
+            this.poppers.push(popper);
+        });
     }
 
     clear() {
@@ -352,6 +423,11 @@ class ModGraph {
         });
         this.cy.id = this.cy.id + 1;
         return n;
+    }
+
+    setConstraintsSelected(constraints) {
+        this.cy.nodes(':selected').data('constraints', constraints);
+        this.updatePoppers();
     }
 
     removeSelected() {
@@ -437,7 +513,7 @@ class ModGraph {
 
         var lay = cy.layout({
             name: 'preset',
-            padding: 100,
+            padding: 50,
             positions: function (node) {
                 // return jsonGraph.nodes[node.id()].position;
                 return positions[node.id()];
@@ -447,6 +523,7 @@ class ModGraph {
         this.cy.nodes(":selectable").forEach(n => {
             console.log(n.position());
         });
+        this.updatePoppers();
         // this.cy.fit();
     }
 
@@ -540,16 +617,25 @@ class ModGraph {
             });
         });
 
+        jsonRule.constraints.forEach(c => {
+            var n = cy.getElementById(String(c.id));
+            if (n.data("constraints") === undefined) {
+                n.data("constraints", []);
+            }
+            n.data("constraints").push(c);
+        });
+
         var nodes_ = nodes;
         var lay = cy.layout({
             name: 'preset',
-            padding: 100,
+            padding: 50,
             positions: function (node) {
                 return nodes.get(parseInt(node.id())).scaledPos;
                 // return positions[node.id()];
             }
         });
         lay.run();
+        this.updatePoppers();
         // var lay = cy.layout({ name: 'circle' });
         // lay.run();
     }
@@ -650,6 +736,20 @@ class ModGraph {
             });
             output.push("  ]");
         });
+        this.cy.nodes("[constraints]").forEach(n => {
+            n.data("constraints").forEach(c => {
+                var gmlnl = []
+                c.nodeLabels.forEach(l => { gmlnl.push("label \"" + l + "\"") });
+                gmlnl = "[ " + gmlnl.join(" ") + " ]";
+
+                var gmlel = []
+                c.edgeLabels.forEach(l => { gmlel.push("label \"" + l + "\"") });
+                gmlel = "[ " + gmlel.join(" ") + " ]";
+
+                output.push(`constrainAdj [ id ${n.id()} op "${c.op}" count ${c.count} nodeLabels ${gmlnl} edgeLabels ${gmlel} ]`)
+            });
+
+        });
         output.push("]");
         return output.join("\n");
     }
@@ -659,6 +759,8 @@ class ModGraph {
         this.cy.id = span.K.cy.nodes().length;
         this.cy.add(span.K.cy.elements(":selectable"));
         this.cy.fit();
+        this.showChemView = span.K.showChemView;
+        this.updatePoppers();
     }
 
     toggleChemView() {
@@ -669,6 +771,9 @@ class ModGraph {
 
     destroy() {
         this.cy.destroy();
+        this.poppers.forEach(p => {
+            p.destroy();
+        });
     }
 }
 

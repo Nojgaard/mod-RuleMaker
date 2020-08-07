@@ -8,6 +8,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
+	<!-- <script src="vendor/requirejs/require.js"></script> -->
 	<script src="vendor/filesaver/FileSaver.js"></script>
 	<script src="vendor/cytoscape/cytoscape.min.js"></script>
 
@@ -16,6 +17,8 @@
 
 	<script src="vendor/lodash/lodash.js"></script>
 	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
+	<script src="node_modules/popper.js/dist/umd/popper.min.js"></script>
+	<script src="vendor/cytoscape.js-popper/cytoscape-popper.js"></script>
 	<!-- <script src="rule-maker.js"></script> -->
 	<script src="js/modgraph.js"></script>
 	<script src="js/dpospan.js"></script>
@@ -26,6 +29,11 @@
 	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="vendor/bootstrap-select-1.13.14/dist/css/bootstrap-select.min.css">
+
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="vendor/bootstrap-select-1.13.14/dist/js/bootstrap-select.min.js"></script>
 	<link rel="stylesheet" href="vendor/font-awesome-4.7.0/css/font-awesome.min.css">
 
 
@@ -77,9 +85,35 @@
 			width: 33%;
 		}
 
-		#cySpanMiddle{
+		#cySpanMiddle {
 			border-left: 5px solid #343a40;
 			border-right: 5px solid #343a40;
+		}
+
+		.table>tbody>tr:first-child>td {
+			border: none;
+		}
+
+		.constraintDiv {
+			background-color: #343a40;
+			color: #fff;
+			text-align: center;
+			border-radius: 6px;
+			padding: 10px 20px 0px 20px;
+			position: relative;
+			z-index: 1;
+			margin-top: 5px;
+		}
+
+		.constraintDiv::after {
+			content: "";
+			position: absolute;
+			bottom: 100%;
+			left: 50%;
+			margin-left: -5px;
+			border-width: 5px;
+			border-style: solid;
+			border-color: transparent transparent #343a40 transparent;
 		}
 	</style>
 
@@ -225,7 +259,7 @@
 			});
 
 			document.querySelector('#btnViewerGraph').addEventListener('click', function (event) {
-				
+
 
 				var divGraph = document.getElementById("cy");
 				divGraph.style.display = "flex";
@@ -259,7 +293,7 @@
 				var divL = document.getElementById("cySpanLeft");
 				var divK = document.getElementById("cySpanMiddle");
 				var divR = document.getElementById("cySpanRight");
-				
+
 				var tmp = modgraph;
 				modgraph = new DPOSpan(divL, divK, divR);
 				modgraph.readModGraph(tmp);
@@ -268,7 +302,7 @@
 
 			//document.querySelector('#btnViewerSpan').click();
 
-			document.getElementById('btnChemView').addEventListener('click', function(event) {
+			document.getElementById('btnChemView').addEventListener('click', function (event) {
 				modgraph.toggleChemView();
 				var btn = document.getElementById('btnChemView');
 				btn.classList.toggle("active");
@@ -329,6 +363,9 @@
 						<button class="dropdown-item" data-toggle="modal" data-target="#modalRename">
 							Rename Selected
 						</button>
+						<button class="dropdown-item" data-toggle="modal" data-target="#modalConstraints">
+							Add Constraints Selected
+						</button>
 						<div class="dropdown-divider"></div>
 						<button id="btnClearGraph" class="dropdown-item">
 							Clear Graph
@@ -372,7 +409,7 @@
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">Rename Selected Nodes</h5>
+					<h5 class="modal-title">Rename Selected Elements</h5>
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 						<span aria-hidden="true">&times;</span>
 					</button>
@@ -387,19 +424,182 @@
 			</div>
 		</div>
 	</div>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+
+			function addRowConstraint() {
+				var divRow = document.getElementById('constraintRowTemplate');
+				var divConstraintsContainer = document.getElementById("containerConstraints");
+				divConstraintsContainer.innerHTML += divRow.innerHTML;
+
+				var rows = divConstraintsContainer.getElementsByClassName("btnConstraintRemove");
+				for (var i = 0; i < rows.length; i++) {
+					rows[i].addEventListener('click', function (event) {
+						event.currentTarget.parentNode.parentNode.remove();
+					});
+				}
+
+				//console.log(divConstraintsContainer.getElementsByClassName("row")[0]);
+				//$('select').selectpicker();
+			}
+
+			// document.getElementsByClassName("btnConstraintRemove")[0].addEventListener('click', function (event) {
+			// 	event.currentTarget.parentNode.parentNode.remove();
+			// });
+
+			document.getElementById("btnConstraintAddRow").addEventListener('click', function (e) {
+				addRowConstraint();
+			});
+
+
+			document.getElementById("btnAddConstraints").addEventListener('click', function (e) {
+				var container = document.getElementById("containerConstraints");
+				var rows = container.getElementsByClassName("row");
+
+				var constraints = []
+				for (var i = 0; i < rows.length; i++) {
+					var op = rows[i].getElementsByTagName('select')[0].value;
+
+					var inputs = rows[i].getElementsByTagName("input");
+					var count = inputs[0].value;
+					var nodeLabels = inputs[1].value.split(",");
+					var edgeLabels = inputs[2].value.split(",");
+					if (nodeLabels.length == 1 && nodeLabels[0] == "") {
+						nodeLabels = [];
+					}
+					if (edgeLabels.length == 1 && edgeLabels[0] == "") {
+						edgeLabels = [];
+					}
+
+					constraints.push({
+						op: op,
+						count: count,
+						nodeLabels: nodeLabels,
+						edgeLabels: edgeLabels
+					});
+					rows[i].remove();
+				}
+				console.log('Setting Constraints');
+				console.log(constraints);
+				modgraph.setConstraintsSelected(constraints);
+				$("#modalConstraints").modal("hide");
+			});
+			$("#modalConstraints").on("shown.bs.modal", function (e) {
+				addRowConstraint()
+			});
+		});
+	</script>
+
+	<!-- Add Constraints Modal-->
+	<div class="modal" id="modalConstraints" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Add Constraints for Selected Nodes</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+
+					<div class="row form-group" style="margin-top: 5px;">
+						<div class="col-sm-2 font-weight-bold">
+							Operation
+						</div>
+						<div class="col-sm-2 font-weight-bold">
+							Count
+						</div>
+						<div class="col-sm-3 font-weight-bold">
+							Node Labels
+						</div>
+						<div class="col-sm-3 font-weight-bold">
+							Edge Labels
+						</div>
+					</div>
+					<div id="constraintRowTemplate" style="display: none;">
+						<div class="row form-group">
+							<div class="col-sm-2">
+								<select data-width="fit">
+									<option value="<">&lt;</option>
+									<option value="<=">&lt;=</option>
+									<option value="=">=</option>
+									<option value=">=">&gt;=</option>
+									<option value=">">&gt;</option>
+								</select>
+							</div>
+							<div class="col-sm-2">
+								<input class="form-control" type="text" id="txtContraintCount" />
+							</div>
+							<div class="col-sm-3">
+								<input class="form-control" type="text" id="txtConstraintNodes" />
+							</div>
+							<div class="col-sm-3">
+								<input class="form-control" type="text" id="txtConstraintEdges" />
+							</div>
+							<div class="col-sm-2">
+								<button type="button" class="btn btn-default btnConstraintRemove"
+									aria-label="Left Align">
+									<i class="fa fa-times fa-lg" aria-hidden="true"></i>
+								</button>
+							</div>
+						</div>
+					</div>
+					<div id="containerConstraints" class="container">
+						<!-- <div class="row">
+							<div class="col-sm-2">
+								<select class="selectpicker" data-width="fit">
+									<option value="<">&lt;</option>
+									<option value="<=">&lt;=</option>
+									<option value="=">=</option>
+									<option value=">=">&gt;=</option>
+									<option value=">">&gt;</option>
+								</select>
+							</div>
+							<div class="col-sm-2">
+								<input class="form-control" type="text" id="txtContraintCount" />
+							</div>
+							<div class="col-sm-3">
+								<input class="form-control" type="text" id="txtConstraintNodes" />
+							</div>
+							<div class="col-sm-3">
+								<input class="form-control" type="text" id="txtConstraintEdges" />
+							</div>
+							<div class="col-sm-2">
+								<button type="button" class="btn btn-default btnConstraintRemove"
+									aria-label="Left Align">
+									<i class="fa fa-times fa-lg" aria-hidden="true"></i>
+								</button>
+							</div>
+						</div> -->
+					</div>
+					<div class="row" style="margin-top: 5px;">
+						<div class="col-sm-8"></div>
+						<div class="col-sm-4">
+							<button id="btnConstraintAddRow" type="button" class="btn btn-default">
+								Add Constraint
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button id="btnAddConstraints" type="button" class="btn btn-primary">Save changes</button>
+					<!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+				</div>
+			</div>
+		</div>
+	</div>
 	<!-- Page Content -->
 
 	<div id="page-content-wrapper" class="container-fluid">
 		<div id="cy"></div>
 
 		<div id="cySpan">
-			<div id="cySpanLeft" class="cySpanGraph" ></div>
+			<div id="cySpanLeft" class="cySpanGraph"></div>
 			<div id="cySpanMiddle" class="cySpanGraph"></div>
 			<div id="cySpanRight" class="cySpanGraph"></div>
 		</div>
 	</div>
-
-
 </body>
 
 </html>

@@ -101,9 +101,7 @@ class DPOSpan {
             event.cy.nodes(":grabbed").forEach(node => {
                 ["L", "K", "R"].forEach(T => {
                     var id = node.id();
-                    self[T].cy.nodes("#" + String(id)).forEach(Tnode => {
-                        Tnode.position(node.position());
-                    })
+                    self[T].cy.getElementById(id).position(node.position());
                 })
             });
         }
@@ -333,6 +331,8 @@ class DPOSpan {
             g.clear();
             g.cy.add(modgraph.cy.elements(":selectable"));
             g.cy.fit();
+            g.showChemView = modgraph.showChemView;
+            g.updatePoppers();
         });
 
         this.L.cy.elements("[label]").forEach(e => {
@@ -349,6 +349,7 @@ class DPOSpan {
             }
         });
 
+
     }
 
     toggleChemView() {
@@ -360,6 +361,9 @@ class DPOSpan {
     destroy() {
         this.graphs().forEach(g => {
             g.cy.destroy();
+            g.poppers.forEach(p => {
+                p.destroy();
+            });
         });
     }
 }

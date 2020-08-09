@@ -308,6 +308,11 @@
 				btn.classList.toggle("active");
 			});
 
+			document.getElementById('btnConstraintsView').addEventListener('click', function (event) {
+				modgraph.toggleShowConstraints();
+				event.srcElement.classList.toggle('active');
+			});
+
 			document.addEventListener('keyup', function (event) {
 
 				// On delete
@@ -337,6 +342,7 @@
 
 		<div class="collapse navbar-collapse" id="navbarSupportedContent">
 			<ul class="navbar-nav mr-auto">
+				<!-- FILE DROPDOWN-->
 				<li class="nav-item dropdown active">
 					<a class="nav-link dropdown-toggle" id="fileDropDown" href="#" data-toggle="dropdown"
 						aria-haspopup="true" aria-expanded="false">File</a>
@@ -356,10 +362,15 @@
 						</button>
 					</div>
 				</li>
+				<!-- EDIT DROPDOWN-->
 				<li class="nav-item dropdown active">
 					<a class="nav-link dropdown-toggle" id="editDropDown" href="#" data-toggle="dropdown"
 						aria-haspopup="true" aria-expanded="false">Edit</a>
 					<div class="dropdown-menu" aria-labelledby="editDropDown">
+						<button class="dropdown-item" data-toggle="modal" data-target="#modalSmiles">
+							Add SMILES
+						</button>
+						<div class="dropdown-divider"></div>
 						<button class="dropdown-item" data-toggle="modal" data-target="#modalRename">
 							Rename Selected
 						</button>
@@ -372,6 +383,7 @@
 						</button>
 					</div>
 				</li>
+				<!-- LAYOUT DROPDOWN-->
 				<li class="nav-item dropdown active">
 					<a class="nav-link dropdown-toggle" id="layoutDropDown" href="#" data-toggle="dropdown"
 						aria-haspopup="true" aria-expanded="false">Layout</a>
@@ -382,12 +394,16 @@
 						<!-- <button class="dropdown-item" type="button" id="btnGraphCoord">Use MØD Graph Coordinates</button> -->
 					</div>
 				</li>
+				<!-- VIEWER DROPDOWN-->
 				<li class="nav-item dropdown active">
 					<a class="nav-link dropdown-toggle" id="viewerDropDown" href="#" data-toggle="dropdown"
 						aria-haspopup="true" aria-expanded="false">Viewer</a>
 					<div class="dropdown-menu" aria-labelledby="viewerDropDown">
 						<button id="btnChemView" class="dropdown-item active">
 							Chem View
+						</button>
+						<button id="btnConstraintsView" class="dropdown-item active">
+							Show Constraints
 						</button>
 						<div class="dropdown-divider"></div>
 						<button id="btnViewerGraph" class="dropdown-item active">
@@ -405,6 +421,13 @@
 
 
 	<!-- Rename Nodes Modal-->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$("#modalRename").on("shown.bs.modal", function (e) {
+				document.getElementById('txtRelabel').focus();
+			});
+		});
+	</script>
 	<div class="modal" id="modalRename" tabindex="-1" role="dialog">
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content">
@@ -420,6 +443,54 @@
 				<div class="modal-footer">
 					<button id="btnRelabel" type="button" class="btn btn-primary">Save changes</button>
 					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Smiles Modal-->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$("#modalSmiles").on("shown.bs.modal", function (e) {
+				document.getElementById('txtSmiles').focus();
+			});
+
+			document.getElementById('btnSmiles').addEventListener('click', function (e) {
+				var data = {
+					"type": "smiles",
+					"data": document.getElementById('txtSmiles').value
+				};
+				mod_service.send("getGraphCoords", data, function (response) {
+					try {
+						console.log(response);
+						var gRule = GML_GRAPH.parse(response.graphGML);
+						console.log(gRule);
+					} catch (e) {
+						console.log(e);
+						return;
+					}
+					// readRuleJson(cy, jRule);
+					modgraph.addJsonGraph(gRule);
+					document.querySelector('#btnRuleCoord').click();
+				});
+			});
+		});
+	</script>
+
+	<div class="modal" id="modalSmiles" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Add SMILES</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<input class="form-control" type="text" id="txtSmiles" />
+				</div>
+				<div class="modal-footer">
+					<button id="btnSmiles" type="button" class="btn btn-primary">Create</button>
 				</div>
 			</div>
 		</div>

@@ -347,6 +347,7 @@ class ModGraph {
 
         this.cy.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
+        this.showConstraints = true;
 
         this.poppers = [];
         this.updatePoppers();
@@ -355,10 +356,15 @@ class ModGraph {
     }
 
     updatePoppers() {
+
         console.log("Updating Poppers");
         this.poppers.forEach(p => {
             p.destroy();
         });
+
+        if (!this.showConstraints) {
+            return;
+        }
 
         var makeTable = function (constraints) {
             var out = [];
@@ -408,6 +414,9 @@ class ModGraph {
     clear() {
         this.cy.elements().remove();
         this.cy.id = 0;
+        this.poppers.forEach(p => {
+            p.destroy();
+        });
     }
 
     addNode(lbl, pos) {
@@ -417,7 +426,8 @@ class ModGraph {
             data: {
                 label: lbl,
                 id: this.cy.id,
-                type: LabelType.STATIC
+                type: LabelType.STATIC,
+                chemviewe: this.showChemView
             },
             renderedPosition: { x: pos.x, y: pos.y }
         });
@@ -459,33 +469,20 @@ class ModGraph {
         });
     }
 
+    addJsonGraph(jsonGraph) {
+        console.log("ModGraph.addJsonGraph()");
 
-    readJsonGraph(jsonGraph) {
-        console.log("MODGRAPH: readJsonGraph()");
         var cy = this.cy
         var nodes = new Map();
-        var edge = new Map();
-        var id = jsonGraph.nodes.length;
         var self = this;
 
-        cy.elements().remove();
-        cy.id = id;
-
         jsonGraph.nodes.forEach(node => {
-            var id = node.id;
-            cy.add({
-                group: 'nodes',
-                data: {
-                    label: node.label,
-                    id: id,
-                    type: LabelType.STATIC
-                },
-            });
+            nodes[node.id] = this.addNode(node.label, node.position);
         });
 
         jsonGraph.edges.forEach(edge => {
-            var src = edge.src;
-            var tar = edge.tar;
+            var src = nodes[edge.src].id();
+            var tar = nodes[edge.tar].id();
             var lbl = edge.label
             cy.add({
                 group: 'edges',
@@ -498,7 +495,19 @@ class ModGraph {
                 }
             });
         });
+    }
 
+    readJsonGraph(jsonGraph) {
+        console.log("MODGRAPH: readJsonGraph()");
+        var cy = this.cy
+        var nodes = new Map();
+        var edge = new Map();
+        var id = jsonGraph.nodes.length;
+        var self = this;
+
+        this.clear();
+
+        this.addJsonGraph(jsonGraph);
 
         var positions = []
         jsonGraph.nodes.forEach(function (node) {
@@ -520,9 +529,6 @@ class ModGraph {
             }
         });
         lay.run();
-        this.cy.nodes(":selectable").forEach(n => {
-            console.log(n.position());
-        });
         this.updatePoppers();
         // this.cy.fit();
     }
@@ -760,6 +766,7 @@ class ModGraph {
         this.cy.add(span.K.cy.elements(":selectable"));
         this.cy.fit();
         this.showChemView = span.K.showChemView;
+        this.showConstraints = span.K.showConstraints;
         this.updatePoppers();
     }
 
@@ -767,6 +774,11 @@ class ModGraph {
 
         this.showChemView = !this.showChemView;
         this.cy.edges(":selectable").data('chemview', this.showChemView);
+    }
+
+    toggleShowConstraints() {
+        this.showConstraints = !this.showConstraints;
+        this.updatePoppers();
     }
 
     destroy() {

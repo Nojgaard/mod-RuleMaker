@@ -252,7 +252,7 @@ class DPOSpan {
 
     clear() {
         this.graphs().forEach(g => {
-            g.cy.elements().remove();
+            g.clear();
         });
     }
 
@@ -332,6 +332,7 @@ class DPOSpan {
             g.cy.add(modgraph.cy.elements(":selectable"));
             g.cy.fit();
             g.showChemView = modgraph.showChemView;
+            g.showConstraints = modgraph.showConstraints;
             g.updatePoppers();
         });
 
@@ -348,14 +349,25 @@ class DPOSpan {
                 e.data("label", lbl.right);
             }
         });
-
-
     }
+
+    setConstraintsSelected(constraints) {
+        this.L.setConstraintsSelected(constraints);
+        this.K.setConstraintsSelected(constraints);
+        this.R.setConstraintsSelected(constraints);
+    }
+
 
     toggleChemView() {
         this.L.toggleChemView();
         this.K.toggleChemView();
         this.R.toggleChemView();
+    }
+
+    toggleShowConstraints() {
+        this.L.toggleShowConstraints();
+        this.K.toggleShowConstraints();
+        this.R.toggleShowConstraints();
     }
 
     destroy() {

@@ -194,9 +194,18 @@ class DPOSpan {
         this.R.cy.on("tap", onTap);
 
 
-
-
         this.nodeId = this.K.cy.nodes().length;
+
+        var onMouseMove = function(e) {
+            var pos = e.position || e.cyPosition;
+            self.graphs().forEach(g => {
+                g.cy.mouseX = pos.x;
+                g.cy.mouseY = pos.y;
+            });
+        };
+        self.graphs().forEach(g => {
+            g.cy.on("mousemove", onMouseMove);
+        });
     }
 
     addNode(rawLabel, pos) {
@@ -250,6 +259,23 @@ class DPOSpan {
 
     }
 
+    copySelected()  {
+        var self = this;
+        this.graphs().forEach(g => {
+            g.copySelected(g === self.R);
+        });
+    }
+
+    paste() {
+        var self = this;
+        console.log("NODE ID ", this.nodeId);
+        this.graphs().forEach(g => {
+            g.cy.id = self.nodeId;
+            g.paste();
+        });
+        this.nodeId = this.K.cy.id;
+    }
+
     clear() {
         this.graphs().forEach(g => {
             g.clear();
@@ -259,7 +285,7 @@ class DPOSpan {
     removeSelected() {
         console.log("removing selected ", this.K.cy.elements(":selected").length);
         this.graphs().forEach(g => {
-            g.cy.elements(":selected").remove();
+            g.removeSelected();
         });
     }
 
@@ -291,6 +317,17 @@ class DPOSpan {
         this.prepareContextLabels();
 
         return this.K.toGMLRule();
+    }
+
+    addJsonGraph(jsonGraph) {
+        console.log("DPOSPan: Adding JSON Graph");
+        //this.clear();
+        var self = this;
+        this.graphs().forEach(g => {
+            g.cy.id = self.nodeId;
+            g.addJsonGraph(jsonGraph);
+        });
+        this.nodeId = this.K.cy.nodes().length;
     }
 
     readJsonGraph(jsonGraph) {
@@ -326,7 +363,7 @@ class DPOSpan {
     }
 
     readModGraph(modgraph) {
-        this.nodeId =  modgraph.cy.nodes().length + 1;
+        this.nodeId =  modgraph.cy.id;
         this.graphs().forEach(g => {
             g.clear();
             g.cy.add(modgraph.cy.elements(":selectable"));

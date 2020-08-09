@@ -343,12 +343,52 @@ class ModGraph {
                     i = i + 1;
                 });
             }
+
+            this.cy.on('mousemove', function onmousemove(e) {
+                var pos = e.position || e.cyPosition;
+                self.cy.mouseX = pos.x;
+                self.cy.mouseY = pos.y;
+            });
         }
 
         this.cy.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
         this.showConstraints = true;
 
+        var cbOptions = {
+
+            // The following 4 options allow the user to provide custom behavior to
+            // the extension. They can be used to maintain consistency of some data
+            // when elements are duplicated.
+            // These 4 options are set to null by default. The function prototypes
+            // are provided below for explanation purpose only.
+
+            // Function executed on the collection of elements being copied, before
+            // they are serialized in the clipboard
+            beforeCopy: function(eles) {},
+            // Function executed on the clipboard just after the elements are copied.
+            // clipboard is of the form: {nodes: json, edges: json}
+            afterCopy: function(clipboard) {},
+            // Function executed on the clipboard right before elements are pasted,
+            // when they are still in the clipboard.
+            beforePaste: function(clipboard) {
+            },
+            oldIdToNewId: function(cb) {
+                var idMap = new Map();
+                cb.nodes.forEach(n => {
+                    idMap.set(n.data.id, self.cy.id);
+                    self.cy.id += 1;
+                });
+                return idMap;
+            },
+            // Function executed on the collection of pasted elements, after they
+            // are pasted.
+            afterPaste: function(eles) {
+
+            }
+        };
+
+        this.cb = this.cy.clipboard(cbOptions);
         this.poppers = [];
         this.updatePoppers();
 
@@ -357,7 +397,7 @@ class ModGraph {
 
     updatePoppers() {
 
-        console.log("Updating Poppers");
+       // console.log("Updating Poppers");
         this.poppers.forEach(p => {
             p.destroy();
         });
@@ -440,8 +480,22 @@ class ModGraph {
         this.updatePoppers();
     }
 
+    copySelected(unselectCopied = true) {
+        var id = this.cb.copy(this.cy.elements(':selected'));
+        if (unselectCopied) {
+            this.cy.elements(':selected').unselect();
+        }
+
+    }
+
+    paste() {
+        this.cb.paste();
+        this.updatePoppers();
+    }
+
     removeSelected() {
         this.cy.$(':selected').remove();
+        this.updatePoppers();
     }
 
     renameSelected(rawLabel) {
@@ -477,12 +531,13 @@ class ModGraph {
         var self = this;
 
         jsonGraph.nodes.forEach(node => {
-            nodes[node.id] = this.addNode(node.label, node.position);
+            nodes.set(node.id, this.addNode(node.label, node.position));
         });
+        console.log(nodes);
 
         jsonGraph.edges.forEach(edge => {
-            var src = nodes[edge.src].id();
-            var tar = nodes[edge.tar].id();
+            var src = nodes.get(edge.src).id();
+            var tar = nodes.get(edge.tar).id();
             var lbl = edge.label
             cy.add({
                 group: 'edges',

@@ -11,22 +11,27 @@
 	<!-- <script src="vendor/requirejs/require.js"></script> -->
 	<script src="vendor/filesaver/FileSaver.js"></script>
 	<script src="vendor/cytoscape/cytoscape.min.js"></script>
+	<script src="vendor/jquery/jquery.min.js"></script>
 
 	<!-- for testing with local version of cytoscape.js -->
 	<!--<script src="../cytoscape.js/build/cytoscape.js"></script>-->
 
+	<script src="vendor/mousetrap/mousetrap.min.js"></script>
 	<script src="vendor/lodash/lodash.js"></script>
+	<script src="vendor/cytoscape.js-clipboard/cytoscape-clipboard.js"></script>
 	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
 	<script src="node_modules/popper.js/dist/umd/popper.min.js"></script>
 	<script src="vendor/cytoscape.js-popper/cytoscape-popper.js"></script>
 	<!-- <script src="rule-maker.js"></script> -->
 	<script src="js/modgraph.js"></script>
 	<script src="js/dpospan.js"></script>
+	<script src="js/shortcuts.js"></script>
 	<script src="server/mod_service.js"></script>
 	<script src="grammars/gml.js"></script>
 	<script src="grammars/gml_graph.js"></script>
+
+
 	<!-- Bootstrap CSS CDN -->
-	<script src="vendor/jquery/jquery.min.js"></script>
 	<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 	<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 	<!-- Latest compiled and minified CSS -->
@@ -141,15 +146,6 @@
 				saveAs(blob, "graph.gml");
 			});
 
-
-			document.querySelector('#txtRelabel').addEventListener('keyup', function (event) {
-				// Wait for the enter key
-				if (event.keyCode !== 13) { return; }
-
-				document.querySelector("#btnRelabel").click();
-
-			});
-
 			document.querySelector("#btnRelabel").addEventListener("click", function (event) {
 				var txtLbl = document.querySelector('#txtRelabel').value;
 
@@ -215,6 +211,14 @@
 					});
 				};
 				reader.readAsText(input.files[0]);
+			});
+
+			document.getElementById('btnCopy').addEventListener('click', function(e) {
+				modgraph.copySelected();
+			});
+
+			document.getElementById('btnPaste').addEventListener('click', function(e) {
+				modgraph.paste();
 			});
 
 			document.querySelector('#btnClearGraph').addEventListener('click', function (event) {
@@ -313,20 +317,6 @@
 				event.srcElement.classList.toggle('active');
 			});
 
-			document.addEventListener('keyup', function (event) {
-
-				// On delete
-				if (event.keyCode === 46) {
-					modgraph.removeSelected();
-				} // On 'r'
-				if (event.keyCode === 82 && !$("#modalRename").is(':visible')) {
-					$("#modalRename").modal();
-					document.querySelector('#txtRelabel').value = "";
-					document.querySelector('#txtRelabel').focus();
-
-				}
-			});
-
 
 		});
 	</script>
@@ -371,8 +361,24 @@
 							Add SMILES
 						</button>
 						<div class="dropdown-divider"></div>
+						<button id="btnCopy" class="dropdown-item">
+							Copy
+							<span class="pull-right text-muted">
+								(ctrl+c)
+							</span>
+						</button>
+						<button id="btnPaste" class="dropdown-item">
+							Paste
+							<span class="pull-right text-muted">
+								(ctrl+v)
+							</span>
+						</button>
+						<div class="dropdown-divider"></div>
 						<button class="dropdown-item" data-toggle="modal" data-target="#modalRename">
 							Rename Selected
+							<span class="pull-right text-muted">
+								(ctrl+r)
+							</span>
 						</button>
 						<button class="dropdown-item" data-toggle="modal" data-target="#modalConstraints">
 							Add Constraints Selected
@@ -426,6 +432,10 @@
 			$("#modalRename").on("shown.bs.modal", function (e) {
 				document.getElementById('txtRelabel').focus();
 			});
+
+			Mousetrap(document.getElementById('txtRelabel')).bind('enter', function(e) {
+				document.getElementById('btnRelabel').click();
+			});
 		});
 	</script>
 	<div class="modal" id="modalRename" tabindex="-1" role="dialog">
@@ -472,7 +482,12 @@
 					// readRuleJson(cy, jRule);
 					modgraph.addJsonGraph(gRule);
 					document.querySelector('#btnRuleCoord').click();
+					$("#modalSmiles").modal("hide");
 				});
+			});
+
+			Mousetrap(document.getElementById('txtSmiles')).bind('enter', function(e) {
+				document.getElementById('btnSmiles').click();
 			});
 		});
 	</script>

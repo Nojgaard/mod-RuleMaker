@@ -18,6 +18,7 @@
 
 	<script src="vendor/mousetrap/mousetrap.min.js"></script>
 	<script src="vendor/lodash/lodash.js"></script>
+	<script src="vendor/cytoscape/cytoscape-undo-redo.js"></script>
 	<script src="vendor/cytoscape.js-clipboard/cytoscape-clipboard.js"></script>
 	<script src="vendor/cytoscape/cytoscape-edgehandles.js"></script>
 	<script src="node_modules/popper.js/dist/umd/popper.min.js"></script>
@@ -221,6 +222,14 @@
 				modgraph.paste();
 			});
 
+			document.getElementById('btnUndo').addEventListener('click', function(e) {
+				modgraph.undo();
+			});
+
+			document.getElementById('btnRedo').addEventListener('click', function(e) {
+				modgraph.redo();
+			});
+
 			document.querySelector('#btnClearGraph').addEventListener('click', function (event) {
 				modgraph.clear();
 			});
@@ -359,6 +368,19 @@
 					<div class="dropdown-menu" aria-labelledby="editDropDown">
 						<button class="dropdown-item" data-toggle="modal" data-target="#modalSmiles">
 							Add SMILES
+						</button>
+						<div class="dropdown-divider"></div>
+						<button id="btnUndo" class="dropdown-item">
+							Undo
+							<span class="pull-right text-muted">
+								(ctrl+z)
+							</span>
+						</button>
+						<button id="btnRedo" class="dropdown-item">
+							Redo
+							<span class="pull-right text-muted">
+								(ctrl+y)
+							</span>
 						</button>
 						<div class="dropdown-divider"></div>
 						<button id="btnCopy" class="dropdown-item">

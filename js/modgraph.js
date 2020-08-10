@@ -288,13 +288,10 @@ class ModGraph {
         var self = this;
         if (addListeners) {
             let defaults = {
-                complete: function (sourceNode, targetNode, addedEles) {
-                    console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
-                    var edge = addedEles[0];
-                    edge.data("type", LabelType.STATIC);
-                    edge.data("label", "-");
-                    edge.data("chemview", self.showChemView);
-                }
+                edgeParams: function (source, target, t) {
+                    console.log("adding edge: (", source.id(), ",", target.id(), ")");
+                    return self.cyEdge('-', source.id(), target.id());
+                },
             };
             this.eh = this.cy.edgehandles(defaults);
 
@@ -365,15 +362,15 @@ class ModGraph {
 
             // Function executed on the collection of elements being copied, before
             // they are serialized in the clipboard
-            beforeCopy: function(eles) {},
+            beforeCopy: function (eles) { },
             // Function executed on the clipboard just after the elements are copied.
             // clipboard is of the form: {nodes: json, edges: json}
-            afterCopy: function(clipboard) {},
+            afterCopy: function (clipboard) { },
             // Function executed on the clipboard right before elements are pasted,
             // when they are still in the clipboard.
-            beforePaste: function(clipboard) {
+            beforePaste: function (clipboard) {
             },
-            oldIdToNewId: function(cb) {
+            oldIdToNewId: function (cb) {
                 var idMap = new Map();
                 cb.nodes.forEach(n => {
                     idMap.set(n.data.id, self.cy.id);
@@ -383,7 +380,7 @@ class ModGraph {
             },
             // Function executed on the collection of pasted elements, after they
             // are pasted.
-            afterPaste: function(eles) {
+            afterPaste: function (eles) {
 
             }
         };
@@ -392,12 +389,39 @@ class ModGraph {
         this.poppers = [];
         this.updatePoppers();
 
+        var options = {
+            isDebug: true, // Debug mode for console messages
+            // actions: {},// actions to be added
+            undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
+            stackSizeLimit: undefined, // Size limit of undo stack, note that the size of redo stack cannot exceed size of undo stack
+            ready: function () { // callback when undo-redo is ready
+
+            }
+        }
+
+        this.ur = this.cy.ur = this.cy.undoRedo(options); // Can also be set whenever wanted.
+
+        this.ur.action("data", function (args) {
+            if (args.firstTime) {
+                args.backup = new Map();
+                args.eles.forEach(e => {
+                    args.backup.set(e.id(), e.data(args.name));
+                });
+            }
+            args.eles.data(args.name, args.data);
+            return args;
+        }, function (args) {
+            args.eles.forEach(e => {
+                e.data(args.name, args.backup.get(e.id()));
+            });
+            return args;
+        });
 
     }
 
     updatePoppers() {
 
-       // console.log("Updating Poppers");
+        // console.log("Updating Poppers");
         this.poppers.forEach(p => {
             p.destroy();
         });
@@ -424,7 +448,7 @@ class ModGraph {
             return out.join("\n");
         }
 
-        this.cy.nodes("[constraints]").forEach(node => {
+        this.cy.nodes(":visible[constraints]").forEach(node => {
             console.log("adding popper");
             let popper = node.popper({
                 content: () => {
@@ -459,151 +483,83 @@ class ModGraph {
         });
     }
 
-    addNode(lbl, pos) {
-        console.log("adding node with id: " + String(this.cy.id))
-        var n = this.cy.add({
+    cyNode(rawLabel, pos, useRenderedPosition = true) {
+        var label = new Label(rawLabel);
+        var n = {
             group: 'nodes',
             data: {
-                label: lbl,
+                label: label.toString(),
                 id: this.cy.id,
-                type: LabelType.STATIC,
-                chemviewe: this.showChemView
+                type: label.type
             },
-            renderedPosition: { x: pos.x, y: pos.y }
-        });
+
+        };
+        if (!useRenderedPosition) {
+            n.position = pos;
+        } else {
+            n.renderedPosition = { x: pos.x, y: pos.y };
+        }
         this.cy.id = this.cy.id + 1;
         return n;
     }
 
-    setConstraintsSelected(constraints) {
-        this.cy.nodes(':selected').data('constraints', constraints);
-        this.updatePoppers();
-    }
-
-    copySelected(unselectCopied = true) {
-        var id = this.cb.copy(this.cy.elements(':selected'));
-        if (unselectCopied) {
-            this.cy.elements(':selected').unselect();
-        }
-
-    }
-
-    paste() {
-        this.cb.paste();
-        this.updatePoppers();
-    }
-
-    removeSelected() {
-        this.cy.$(':selected').remove();
-        this.updatePoppers();
-    }
-
-    renameSelected(rawLabel) {
-        // if (rawLabel == "=") {
-        //     this.cy.edges('[label != "="]').forEach(e => {
-        //         addDoubleBond(modgraph.cy, e);
-        //     });
-        // }
-
-
-        var lbl = new Label(rawLabel);
-        this.cy.$(':selected').data("type", lbl.type);
-
-        this.cy.$(':selected').data("label", lbl.toString());
-
-        this.cy.edges().forEach(e => {
-            var srcT = e.source().data("type");
-            var tarT = e.target().data("type");
-            var eT = e.data("type");
-            if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
-                e.data("type", LabelType.CREATE);
-            } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
-                e.data("type", LabelType.REMOVE);
+    cyEdge(rawLabel, src, tar) {
+        var label = new Label(rawLabel);
+        var e = {
+            group: 'edges',
+            data: {
+                source: src,
+                target: tar,
+                label: label.toString(),
+                type: label.type,
+                chemview: this.showChemView
             }
-        });
+        };
+        return e;
     }
 
-    addJsonGraph(jsonGraph) {
-        console.log("ModGraph.addJsonGraph()");
-
-        var cy = this.cy
-        var nodes = new Map();
-        var self = this;
-
+    jsonGraphToCyEles(jsonGraph) {
+        var jid2cyid = new Map();
+        var eles = {
+            nodes: [],
+            edges: []
+        };
         jsonGraph.nodes.forEach(node => {
-            nodes.set(node.id, this.addNode(node.label, node.position));
+            var scaledPos = { x: node.position.x * 100, y: node.position.y * 100 };
+            var cyn = this.cyNode(node.label, scaledPos, false);
+            eles.nodes.push(cyn);
+            jid2cyid.set(node.id, cyn.data.id);
         });
-        console.log(nodes);
 
         jsonGraph.edges.forEach(edge => {
-            var src = nodes.get(edge.src).id();
-            var tar = nodes.get(edge.tar).id();
+            var src = jid2cyid.get(edge.src);
+            var tar = jid2cyid.get(edge.tar);
             var lbl = edge.label
-            cy.add({
-                group: 'edges',
-                data: {
-                    source: src,
-                    target: tar,
-                    label: lbl,
-                    type: LabelType.STATIC,
-                    chemview: self.showChemView
-                }
-            });
+            eles.edges.push(this.cyEdge(lbl, src, tar));
         });
+
+        return eles;
     }
 
-    readJsonGraph(jsonGraph) {
-        console.log("MODGRAPH: readJsonGraph()");
-        var cy = this.cy
-        var nodes = new Map();
-        var edge = new Map();
-        var id = jsonGraph.nodes.length;
+    jsonRuleToCyEles(jsonRule, lblFun = function (lbl) { return lbl.toString() }) {
         var self = this;
+        var eles = {
+            nodes: [],
+            edges: []
+        };
 
-        this.clear();
-
-        this.addJsonGraph(jsonGraph);
-
-        var positions = []
-        jsonGraph.nodes.forEach(function (node) {
-            positions.push({
-                x: node.position.x * 100.,
-                y: node.position.y * 100.
-            })
-            // node.position.x = node.position.x * 100.;
-            // node.position.y = node.position.y * 100.;
-
-        });
-
-        var lay = cy.layout({
-            name: 'preset',
-            padding: 50,
-            positions: function (node) {
-                // return jsonGraph.nodes[node.id()].position;
-                return positions[node.id()];
-            }
-        });
-        lay.run();
-        this.updatePoppers();
-        // this.cy.fit();
-    }
-
-    readJsonRule(jsonRule, lblFun = function (lbl) { return lbl.toString() }) {
-        var cy = this.cy
         var nodes = new Map();
         var edges = new Map();
-        var id = 0;
-        var self = this;
-        //console.log(jsonRule);
+
         ["left", "context", "right"].forEach(T => {
             jsonRule[T].nodes.forEach(node => {
-                if (node.id >= id) { id = node.id + 1; }
                 nodes.set(node.id, { id: node.id, left: "", right: "", position: node.position });
             });
             jsonRule[T].edges.forEach(edge => {
                 edges.set([edge.src, edge.tar].join(","), { src: edge.src, tar: edge.tar, left: "", right: "" });
             });
         });
+
         jsonRule.left.nodes.forEach(node => {
             var id = node.id;
             nodes.get(id).left = node.label;
@@ -631,42 +587,26 @@ class ModGraph {
             edges.get(id).left = edge.label;
             edges.get(id).right = edge.label;
         });
-        cy.elements().remove();
-        cy.id = nodes.size;
 
-        var positions = [];
         nodes.forEach(function (node, key) {
-            var id = node.id;
-            var strLbl = node.left + "/" + node.right;
+            var rawLabel = node.left + "/" + node.right;
             if (node.left === node.right) {
-                strLbl = node.left;
+                rawLabel = node.left;
             }
-            var lbl = new Label(strLbl);
-            cy.add({
-                group: 'nodes',
-                data: {
-                    label: lblFun(lbl),
-                    id: id,
-                    type: lbl.type
-                }
-            });
-            node.scaledPos = {
-                x: node.position.x * 100.,
-                y: node.position.y * 100.
-            };
-            // node.position.x = node.position.x * 100.;
-            // node.position.y = node.position.y * 100.;
+            var n = self.cyNode(rawLabel, { x: node.position.x * 100, y: node.position.y * 100 }, false);
+            node.cyNode = n;
+            eles.nodes.push(n);
         });
 
         edges.forEach(function (edge, key) {
-            var src = edge.src;
-            var tar = edge.tar;
+            var src = nodes.get(edge.src).cyNode.data.id;
+            var tar = nodes.get(edge.tar).cyNode.data.id;
             var strLbl = edge.left + "/" + edge.right;
             if (edge.left === edge.right) {
                 strLbl = edge.left;
             }
             var lbl = new Label(strLbl);
-            cy.add({
+            var e = {
                 group: 'edges',
                 data: {
                     source: src,
@@ -675,30 +615,226 @@ class ModGraph {
                     type: lbl.type,
                     chemview: self.showChemView
                 }
-            });
+            };
+            eles.edges.push(e);
         });
 
         jsonRule.constraints.forEach(c => {
-            var n = cy.getElementById(String(c.id));
-            if (n.data("constraints") === undefined) {
-                n.data("constraints", []);
+            var n = nodes.get(c.id).cyNode;
+            if (n.data.constraints === undefined) {
+                n.data.constraints = [];
             }
-            n.data("constraints").push(c);
+            n.data.constraints.push(c);
         });
 
-        var nodes_ = nodes;
-        var lay = cy.layout({
+        return eles;
+    }
+
+    addNode(lbl, pos) {
+        console.log("adding node with id: " + String(this.cy.id))
+        // var n = this.cy.add(this.cyNode(lbl, pos));
+        var n = this.ur.do("add", this.cyNode(lbl, pos));
+        return n;
+    }
+
+    setConstraintsSelected(constraints) {
+        var eles = this.cy.nodes(':selected');
+        this.ur.do("data", {
+            name: "constraints",
+            eles: eles,
+            data: constraints
+        });
+        this.updatePoppers();
+    }
+
+    copySelected(unselectCopied = true) {
+        var id = this.cb.copy(this.cy.elements(':selected'));
+        if (unselectCopied) {
+            this.cy.elements(':selected').unselect();
+        }
+
+    }
+
+    paste() {
+        this.ur.do("paste");
+        // this.cb.paste();
+        this.updatePoppers();
+    }
+
+    undo() {
+        this.ur.undo();
+        this.updatePoppers();
+    }
+
+    redo() {
+        this.ur.redo();
+        this.updatePoppers();
+    }
+
+    removeSelected() {
+        this.cy.$(':selected').remove();
+        this.updatePoppers();
+    }
+
+    renameSelected(rawLabel, lblFun = function(label) { return label.toString(); }) {
+
+
+        var lbl = new Label(rawLabel);
+        var eles = this.cy.elements(':selected');
+
+        var actionList = [
+            {
+                name: "data", param: {
+                    name: "label",
+                    eles: eles,
+                    data: lblFun(lbl)
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "type",
+                    eles: eles,
+                    data: lbl.type
+                }
+            },
+        ]
+
+        var edgeCreate = this.cy.edges().filter(e => {
+            var srcT = e.source().selected() ? lbl.type : e.source().data("type");
+            var tarT = e.target().selected() ? lbl.type : e.target().data("type");
+            return srcT === LabelType.CREATE || tarT === LabelType.CREATE;
+        });
+
+        var edgeRemove = this.cy.edges().filter(e => {
+            var srcT = e.source().selected() ? lbl.type : e.source().data("type");
+            var tarT = e.target().selected() ? lbl.type : e.target().data("type");
+            return srcT === LabelType.REMOVE || tarT === LabelType.REMOVE;
+        });
+
+
+        var actionList = [
+            {
+                name: "data", param: {
+                    name: "label",
+                    eles: eles,
+                    data: lbl.toString()
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "type",
+                    eles: eles,
+                    data: lbl.type
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "type",
+                    eles: edgeCreate,
+                    data: LabelType.CREATE
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "type",
+                    eles: edgeRemove,
+                    data: LabelType.REMOVE
+                }
+            },
+        ]
+
+        this.cy.ur.do("batch", actionList);
+        // this.cy.$(':selected').data("type", lbl.type);
+        // this.cy.$(':selected').data("label", lbl.toString());
+
+        // this.cy.edges().forEach(e => {
+        //     var srcT = e.source().data("type");
+        //     var tarT = e.target().data("type");
+        //     var eT = e.data("type");
+        //     if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+        //         e.data("type", LabelType.CREATE);
+        //     } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+        //         e.data("type", LabelType.REMOVE);
+        //     }
+        // });
+    }
+
+    addJsonGraph(jsonGraph) {
+        console.log("ModGraph.addJsonGraph()");
+
+        var eles = this.jsonGraphToCyEles(jsonGraph);
+        //this.cy.add(eles);
+        this.ur.do("add", eles);
+    }
+
+    readJsonGraph(jsonGraph) {
+        console.log("MODGRAPH: readJsonGraph()");
+
+        var removeEles = this.cy.elements();
+        //this.clear();
+        var addEles = this.jsonGraphToCyEles(jsonGraph);
+        // var layoutArgs = {
+        //     options: {
+        //         name: 'preset',
+        //         padding: 50,
+        //         positions: function (node) {
+        //             return node.position();
+        //         }
+        //     }
+        // };
+        this.ur.do("batch", [
+            {
+                name: "remove", param: removeEles
+            },
+            {
+                name: "add", param: addEles
+            }
+        ]);
+        var lay = this.cy.layout({
             name: 'preset',
             padding: 50,
             positions: function (node) {
-                return nodes.get(parseInt(node.id())).scaledPos;
-                // return positions[node.id()];
+                return node.position();
             }
         });
         lay.run();
         this.updatePoppers();
-        // var lay = cy.layout({ name: 'circle' });
-        // lay.run();
+        this.updatePoppers();
+    }
+
+    readJsonRule(jsonRule, lblFun = function (lbl) { return lbl.toString() }) {
+        var removeEles = this.cy.elements();
+        var addEles = this.jsonRuleToCyEles(jsonRule, lblFun);
+
+        // var layoutArgs = {
+        //     options: {
+        //         name: 'preset',
+        //         padding: 50,
+        //         positions: function (node) {
+        //             return node.position();
+        //         }
+        //     }
+        // };
+        this.ur.do("batch", [
+            {
+                name: "remove", param: removeEles
+            },
+            {
+                name: "add", param: addEles
+            },
+            // {
+            //     name: "layout", eles: addEles, param: layoutArgs
+            // }
+        ]);
+        var lay = this.cy.layout({
+            name: 'preset',
+            padding: 50,
+            positions: function (node) {
+                return node.position();
+            }
+        });
+        lay.run();
+        this.updatePoppers();
     }
 
     prepareLabels() {

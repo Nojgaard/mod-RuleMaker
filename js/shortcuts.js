@@ -19,4 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         document.getElementById('btnPaste').click();
     });
+
+    Mousetrap.bind('ctrl+z', function(e) {
+        e.preventDefault();
+        document.getElementById('btnUndo').click();
+    });
+
+    Mousetrap.bind('ctrl+y', function(e) {
+        e.preventDefault();
+        document.getElementById('btnRedo').click();
+    });
 });

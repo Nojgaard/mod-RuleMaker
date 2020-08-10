@@ -522,13 +522,16 @@ function makeEdges() {
     added = added.merge(interNode).merge(source2inter).merge(inter2target);
   } else {
     // flat
-    var source2target = cy.add(getEleJson({
+    var ele =  getEleJson({
       group: 'edges',
       data: {
         source: source.id(),
         target: target.id()
       }
-    }, options.edgeParams(source, target, 0), classes));
+    }, options.edgeParams(source, target, 0), classes);
+
+    //var source2target = cy.add(ele);
+    var source2target = (cy.ur !== 'undefined') ? cy.ur.do("add", ele) : cy.add(ele);
 
     added = added.merge(source2target);
   }

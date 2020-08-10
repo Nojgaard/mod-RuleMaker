@@ -74,8 +74,7 @@ class DPOSpan {
                             classes.push("ghost-elem")
                         }
 
-
-                        self[U].cy.add({
+                        self[U].ur.do("add", {
                             group: 'edges',
                             data: {
                                 id: edge.id(),
@@ -87,6 +86,19 @@ class DPOSpan {
                             },
                             classes: classes
                         });
+
+                        // self[U].cy.add({
+                        //     group: 'edges',
+                        //     data: {
+                        //         id: edge.id(),
+                        //         source: sourceNode.id(),
+                        //         target: targetNode.id(),
+                        //         label: edge.data("label"),
+                        //         type: edge.data("type"),
+                        //         chemview: edge.data("chemview")
+                        //     },
+                        //     classes: classes
+                        // });
 
                     });
                 }
@@ -209,53 +221,73 @@ class DPOSpan {
     }
 
     addNode(rawLabel, pos) {
-        var label = new Label(rawLabel);
-        var self = this
-
         this.graphs().forEach(g => {
-            var nodeLabel = label.toString();
-            var n = g.cy.add({
-                group: "nodes",
-                data: {
-                    label: label.toString(),
-                    id: this.nodeId,
-                    type: label.type,
-                },
-                renderedPosition: pos
-            });
+            g.addNode(rawLabel, pos);
         });
         this.nodeId = this.nodeId + 1;
+        // var label = new Label(rawLabel);
+        // var self = this
+
+        // this.graphs().forEach(g => {
+        //     var nodeLabel = label.toString();
+        //     var n = g.cy.add({
+        //         group: "nodes",
+        //         data: {
+        //             label: label.toString(),
+        //             id: this.nodeId,
+        //             type: label.type,
+        //         },
+        //         renderedPosition: pos
+        //     });
+        // });
+        // this.nodeId = this.nodeId + 1;
 
     }
 
     renameSelected(rawLabel) {
         var self = this;
-        var label = new Label(rawLabel);
-        this.graphs().forEach(g => {
-            g.cy.elements(":selected").forEach(e => {
-                var eLabel = label.toString();
-                if (label.type === LabelType.RENAME && g === self.L) {
-                    eLabel = label.left;
-                } else if (label.type === LabelType.RENAME && g === self.R) {
-                    eLabel = label.right;
-                }
-                e.data("label", eLabel);
-                e.data("type", label.type);
-            });
+        this.L.renameSelected(rawLabel, function(lbl) {
+            if (lbl.type === LabelType.RENAME) {
+                return lbl.left;
+            } else {
+                return lbl.toString();
+            };
+            
         });
+        this.K.renameSelected(rawLabel);
+        this.R.renameSelected(rawLabel, function(lbl) {
+            if (lbl.type === LabelType.RENAME) {
+                return lbl.right;
+            } else {
+                return lbl.toString();
+            };
+        });
+        // var label = new Label(rawLabel);
+        // this.graphs().forEach(g => {
+        //     g.cy.elements(":selected").forEach(e => {
+        //         var eLabel = label.toString();
+        //         if (label.type === LabelType.RENAME && g === self.L) {
+        //             eLabel = label.left;
+        //         } else if (label.type === LabelType.RENAME && g === self.R) {
+        //             eLabel = label.right;
+        //         }
+        //         e.data("label", eLabel);
+        //         e.data("type", label.type);
+        //     });
+        // });
 
-        this.graphs().forEach(g => {
-            g.cy.edges().forEach(e => {
-                var srcT = e.source().data("type");
-                var tarT = e.target().data("type");
-                var eT = e.data("type");
-                if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
-                    e.data("type", LabelType.CREATE);
-                } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
-                    e.data("type", LabelType.REMOVE);
-                }
-            });
-        });
+        // this.graphs().forEach(g => {
+        //     g.cy.edges().forEach(e => {
+        //         var srcT = e.source().data("type");
+        //         var tarT = e.target().data("type");
+        //         var eT = e.data("type");
+        //         if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+        //             e.data("type", LabelType.CREATE);
+        //         } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+        //             e.data("type", LabelType.REMOVE);
+        //         }
+        //     });
+        // });
 
     }
 
@@ -279,6 +311,18 @@ class DPOSpan {
     clear() {
         this.graphs().forEach(g => {
             g.clear();
+        });
+    }
+
+    undo() {
+        this.graphs().forEach(g => {
+            g.undo();
+        });
+    }
+
+    redo() {
+        this.graphs().forEach(g => {
+            g.redo();
         });
     }
 
@@ -327,7 +371,7 @@ class DPOSpan {
             g.cy.id = self.nodeId;
             g.addJsonGraph(jsonGraph);
         });
-        this.nodeId = this.K.cy.nodes().length;
+        this.nodeId = this.K.cy.id;
     }
 
     readJsonGraph(jsonGraph) {
@@ -336,7 +380,7 @@ class DPOSpan {
         this.graphs().forEach(g => {
             g.readJsonGraph(jsonGraph);
         });
-        this.nodeId = this.K.cy.nodes().length;
+        this.nodeId = this.K.cy.id;
     }
 
     readJsonRule(jsonRule) {
@@ -359,7 +403,7 @@ class DPOSpan {
         // this.graphs().forEach(g => {
         //     g.readJsonRule(jsonRule);
         // })
-        this.nodeId = this.K.cy.nodes().length;
+        this.nodeId = this.K.cy.id;
     }
 
     readModGraph(modgraph) {
@@ -371,6 +415,7 @@ class DPOSpan {
             g.showChemView = modgraph.showChemView;
             g.showConstraints = modgraph.showConstraints;
             g.updatePoppers();
+            g.cy.id = modgraph.cy.id;
         });
 
         this.L.cy.elements("[label]").forEach(e => {

@@ -70,6 +70,7 @@ class ModGraph {
                     selector: 'node[label]',
                     style: {
                         'label': 'data(label)',
+                        'color': '#343a40',
                         //  'background-color': 'data(color)',
                         "text-valign": "center",
                         "text-halign": "center"
@@ -196,7 +197,7 @@ class ModGraph {
                     selector: 'node:selected',
                     style: {
                         'border-width': '2px',
-                        'border-color': '#111111'
+                        'border-color': '#343a40'
                     }
                 },
                 {
@@ -211,7 +212,7 @@ class ModGraph {
                 {
                     selector: '.eh-handle',
                     style: {
-                        'background-color': '#111111',
+                        'background-color': '#343a40',
                         'width': 12,
                         'height': 12,
                         'shape': 'ellipse',
@@ -224,7 +225,7 @@ class ModGraph {
                 {
                     selector: '.eh-hover',
                     style: {
-                        'background-color': '#111111'
+                        'background-color': '#343a40'
                     }
                 },
 
@@ -232,7 +233,7 @@ class ModGraph {
                     selector: '.eh-source',
                     style: {
                         'border-width': 2,
-                        'border-color': '#111111'
+                        'border-color': '#343a40'
                     }
                 },
 
@@ -240,7 +241,7 @@ class ModGraph {
                     selector: '.eh-target',
                     style: {
                         'border-width': 2,
-                        'border-color': '#111111'
+                        'border-color': '#343a40'
                     }
                 },
 
@@ -290,7 +291,16 @@ class ModGraph {
             let defaults = {
                 edgeParams: function (source, target, t) {
                     console.log("adding edge: (", source.id(), ",", target.id(), ")");
-                    return self.cyEdge('-', source.id(), target.id());
+                    var srcT = source.data("type");
+                    var tarT = target.data("type");
+                    if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+                        var rawLabel = '/-';
+                    } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+                        var rawLabel = '-/';
+                    } else {
+                        var rawLabel = '-';
+                    }
+                    return self.cyEdge(rawLabel, source.id(), target.id());
                 },
             };
             this.eh = this.cy.edgehandles(defaults);
@@ -425,7 +435,7 @@ class ModGraph {
         this.poppers.forEach(p => {
             p.destroy();
         });
-        this.poppers  = [];
+        this.poppers = [];
 
         if (!this.showConstraints) {
             return;
@@ -677,7 +687,7 @@ class ModGraph {
         this.updatePoppers();
     }
 
-    renameSelected(rawLabel, lblFun = function(label) { return label.toString(); }) {
+    renameSelected(rawLabel, lblFun = function (label) { return label.toString(); }) {
 
 
         var lbl = new Label(rawLabel);

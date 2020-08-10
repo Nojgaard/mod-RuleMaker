@@ -425,6 +425,7 @@ class ModGraph {
         this.poppers.forEach(p => {
             p.destroy();
         });
+        this.poppers  = [];
 
         if (!this.showConstraints) {
             return;
@@ -476,11 +477,10 @@ class ModGraph {
     }
 
     clear() {
-        this.cy.elements().remove();
-        this.cy.id = 0;
-        this.poppers.forEach(p => {
-            p.destroy();
-        });
+        var eles = this.cy.elements();
+        this.cy.ur.do('remove', eles);
+        //this.cy.id = 0;
+        this.updatePoppers();
     }
 
     cyNode(rawLabel, pos, useRenderedPosition = true) {
@@ -672,7 +672,8 @@ class ModGraph {
     }
 
     removeSelected() {
-        this.cy.$(':selected').remove();
+        var eles = this.cy.$(':selected');
+        this.ur.do('remove', eles);
         this.updatePoppers();
     }
 

@@ -328,28 +328,28 @@ class ModGraph {
                 }
             });
 
-            var onSelect = function (event) {
-                var src = event.target.source().id();
-                var tar = event.target.target().id();
-                var sel = "[source = \"" + src + "\"][target = \"" + tar + "\"]";
-                var eles = event.cy.edges(sel);
-                if (event.target.selected()) {
-                    eles.select();
-                } else {
-                    eles.unselect();
-                }
-            }
-            this.cy.on("select", "edge", onSelect);
-            this.cy.on("unselect", "edge", onSelect);
+            // var onSelect = function (event) {
+            //     var src = event.target.source().id();
+            //     var tar = event.target.target().id();
+            //     var sel = "[source = \"" + src + "\"][target = \"" + tar + "\"]";
+            //     var eles = event.cy.edges(sel);
+            //     if (event.target.selected()) {
+            //         eles.select();
+            //     } else {
+            //         eles.unselect();
+            //     }
+            // }
+            // this.cy.on("select", "edge", onSelect);
+            // this.cy.on("unselect", "edge", onSelect);
 
-            var i = 1;
-            var onDrag = function (event) {
+            // var i = 1;
+            // var onDrag = function (event) {
 
-                event.cy.nodes(":grabbed").forEach(node => {
-                    node.data("offset", String(i) + "%");
-                    i = i + 1;
-                });
-            }
+            //     event.cy.nodes(":grabbed").forEach(node => {
+            //         node.data("offset", String(i) + "%");
+            //         i = i + 1;
+            //     });
+            // }
 
             this.cy.on('mousemove', function onmousemove(e) {
                 var pos = e.position || e.cyPosition;

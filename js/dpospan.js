@@ -69,10 +69,10 @@ class DPOSpan {
                         if (ns.length < 2) {
                             return;
                         }
-                        var classes = [];
-                        if (ns[0].hasClass("ghost-elem") || ns[1].hasClass("ghost-elem")) {
-                            classes.push("ghost-elem")
-                        }
+                        // var classes = [];
+                        // if (ns[0].hasClass("ghost-elem") || ns[1].hasClass("ghost-elem")) {
+                        //     classes.push("ghost-elem")
+                        // }
 
                         self[U].ur.do("add", {
                             group: 'edges',
@@ -84,7 +84,7 @@ class DPOSpan {
                                 type: edge.data("type"),
                                 chemview: edge.data("chemview")
                             },
-                            classes: classes
+                          //  classes: classes
                         });
 
                         // self[U].cy.add({

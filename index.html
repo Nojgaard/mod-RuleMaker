@@ -577,6 +577,7 @@
 
 				var constraints = []
 				for (var i = 0; i < rows.length; i++) {
+					console.log("PARSING CONSTRAINT", i, rows.length);
 					var op = rows[i].getElementsByTagName('select')[0].value;
 
 					var inputs = rows[i].getElementsByTagName("input");
@@ -596,7 +597,6 @@
 						nodeLabels: nodeLabels,
 						edgeLabels: edgeLabels
 					});
-					rows[i].remove();
 				}
 				console.log('Setting Constraints');
 				console.log(constraints);
@@ -605,6 +605,10 @@
 			});
 			$("#modalConstraints").on("shown.bs.modal", function (e) {
 				addRowConstraint()
+			});
+			$("#modalConstraints").on("hide.bs.modal", function (e) {
+				var container = document.getElementById("containerConstraints");
+				container.innerHTML = "";
 			});
 		});
 	</script>

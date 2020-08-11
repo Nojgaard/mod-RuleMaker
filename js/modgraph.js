@@ -449,6 +449,7 @@ class ModGraph {
             out.push("<div class='constraintDiv'><table class='table table-dark'><tbody>");
 
             constraints.forEach(c => {
+                
                 out.push(`
                 <tr class="row">
                     <td >${c.op}</td>
@@ -677,6 +678,7 @@ class ModGraph {
 
     setConstraintsSelected(constraints) {
         var eles = this.cy.nodes(':selected');
+        console.log("WOS", constraints);
         this.ur.do("data", {
             name: "constraints",
             eles: eles,

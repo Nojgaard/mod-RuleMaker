@@ -62,7 +62,7 @@ coord
   = "vis2d" _ "[" _ "x" _ x:float _ "y" _ y:float _ "]" { return {x: x, y: y}; }
 
 string
-  = "\"" str:[a-zA-Z0-9\+\=\-#/&<>\: ]* "\"" { return str.join(""); }
+  = "\"" str:[a-zA-Z0-9\+\=\-#/&<>\:()_ ]* "\"" { return str.join(""); }
 
 integer "integer"
   =  digits:[0-9]+  { return parseInt(digits.join(""), 10); }

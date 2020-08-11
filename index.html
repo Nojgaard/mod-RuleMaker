@@ -91,9 +91,19 @@
 			width: 33%;
 		}
 
-		#cySpanMiddle {
+		[x-out-of-boundaries] {
+			display:none;
+		}
+
+		/* #cySpanMiddle {
 			border-left: 5px solid #343a40;
 			border-right: 5px solid #343a40;
+		} */
+
+		.cyDivider {
+			height: 100%;
+			width: 5px;
+			background-color: #343a40;
 		}
 
 		.table>tbody>tr:first-child>td {
@@ -704,7 +714,9 @@
 
 		<div id="cySpan">
 			<div id="cySpanLeft" class="cySpanGraph"></div>
+			<div class="cyDivider"></div>
 			<div id="cySpanMiddle" class="cySpanGraph"></div>
+			<div class="cyDivider"></div>
 			<div id="cySpanRight" class="cySpanGraph"></div>
 		</div>
 	</div>

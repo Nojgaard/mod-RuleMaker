@@ -458,6 +458,7 @@ class ModGraph {
             out.push("</tbody></table></div>");
             return out.join("\n");
         }
+        var self = this;
 
         this.cy.nodes(":visible[constraints]").forEach(node => {
             console.log("adding popper");
@@ -471,7 +472,25 @@ class ModGraph {
 
                     return div;
                 },
-                popper: { placement: 'bottom' }
+                popper: {
+                    placement: 'bottom',
+                    modifiers: {
+                        preventOverflow: {
+                            enabled: true,
+                            boundariesElement: self.cy.container(),
+                            // padding: -5,
+                            escapeWithReference: true
+                        },
+                        hide: {
+                            enabled: true
+                        },
+                        flip: {
+                            enabled: false
+                        },
+                        
+                    },
+                    removeOnDestroy: true,
+                },
             });
 
             let update = () => {
@@ -493,12 +512,12 @@ class ModGraph {
         this.updatePoppers();
     }
 
-    cyNode(rawLabel, pos, useRenderedPosition = true) {
+    cyNode(rawLabel, pos, useRenderedPosition = true, lblFun = function (lbl) { return lbl.toString(); }) {
         var label = new Label(rawLabel);
         var n = {
             group: 'nodes',
             data: {
-                label: label.toString(),
+                label: lblFun(label),
                 id: this.cy.id,
                 type: label.type
             },
@@ -603,7 +622,8 @@ class ModGraph {
             if (node.left === node.right) {
                 rawLabel = node.left;
             }
-            var n = self.cyNode(rawLabel, { x: node.position.x * 100, y: node.position.y * 100 }, false);
+            var scaledPos = { x: node.position.x * 100, y: node.position.y * 100 };
+            var n = self.cyNode(rawLabel, scaledPos, false, lblFun);
             node.cyNode = n;
             eles.nodes.push(n);
         });
@@ -984,10 +1004,10 @@ class ModGraph {
     }
 
     destroy() {
-        this.cy.destroy();
         this.poppers.forEach(p => {
             p.destroy();
         });
+        this.cy.destroy();
     }
 }
 

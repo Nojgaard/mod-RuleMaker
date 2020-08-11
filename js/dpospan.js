@@ -456,7 +456,7 @@ class DPOSpan {
         this.graphs().forEach(g => {
             g.cy.destroy();
             g.poppers.forEach(p => {
-                p.destroy();
+                p.popper.destroy();
             });
         });
     }

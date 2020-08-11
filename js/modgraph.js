@@ -432,10 +432,13 @@ class ModGraph {
     updatePoppers() {
 
         // console.log("Updating Poppers");
+        var self = this;
         this.poppers.forEach(p => {
-            p.destroy();
+            p.popper.destroy();
+            self.cy.removeListener('position pan zoom resize',  p.handle);
         });
         this.poppers = [];
+        console.log("NUM LISTENERS ", this.cy.emitter().listeners.length);
 
         if (!this.showConstraints) {
             return;
@@ -501,8 +504,13 @@ class ModGraph {
 
             this.cy.on('pan zoom resize', update);
 
-            this.poppers.push(popper);
+            this.poppers.push({
+                popper: popper,
+                handle: update,
+                node: node
+            });
         });
+       
     }
 
     clear() {
@@ -1005,7 +1013,7 @@ class ModGraph {
 
     destroy() {
         this.poppers.forEach(p => {
-            p.destroy();
+            p.popper.destroy();
         });
         this.cy.destroy();
     }

@@ -1,0 +1,31 @@
+{
+  "name": "mod-input-viz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "cytoscape": "^3.15.2",
+    "popper.js": "^1.16.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^14.0.0",
+    "@rollup/plugin-node-resolve": "^8.4.0",
+    "rollup": "^2.23.1"
+  },
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nojgaard/mod-RuleMaker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nojgaard/mod-RuleMaker/issues"
+  },
+  "homepage": "https://github.com/Nojgaard/mod-RuleMaker#readme"
+}

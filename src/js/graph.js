@@ -5,19 +5,19 @@ import undoRedo from 'cytoscape-undo-redo'
 import clipboard from 'cytoscape-clipboard'
 import popper from 'cytoscape-popper';
 
-// cytoscape.use(edgehandles);
-// cytoscape.use(popper)
-// cytoscape.use( undoRedo );
-// clipboard( cytoscape, jquery );
+cytoscape.use(edgehandles);
+cytoscape.use(popper)
+cytoscape.use( undoRedo );
+clipboard( cytoscape, jquery );
 
-const LabelType = {
+export const LabelType = {
     STATIC: "STATIC",
     REMOVE: "REMOVE",
     CREATE: "CREATE",
     RENAME: "RENAME"
 }
 
-class Label {
+export class Label {
     constructor(lbl) {
         var splitLbl = lbl.split("/");
         this.left = "";
@@ -299,6 +299,9 @@ export class Graph {
                     }
                     return self.cyEdge(rawLabel, source.id(), target.id());
                 },
+                addEles: function(cy, eles) {
+                    return cy.ur.do("add", eles);
+                }
             };
             this.eh = this.cy.edgehandles(defaults);
 
@@ -1018,3 +1021,4 @@ export class Graph {
     }
 }
 
+// export default Graph;

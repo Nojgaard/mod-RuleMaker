@@ -1,6 +1,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
+import { terser } from "rollup-plugin-terser";
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 // const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
@@ -19,8 +20,12 @@ const configs = [
       sourcemap: 'inline'
     },
     plugins: [
+      postcss({
+        extensions: ['.css'],
+      }),
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
+      commonjs({ include: './src/js/grammars/*.js' }),
     ]
   },
 
@@ -32,8 +37,13 @@ const configs = [
   //     name
   //   },
   //   plugins: [
+  //     postcss({
+  //       extensions: ['.css'],
+  //     }),
   //     nodeResolve(),
-  //     commonjs({ include: '**/node_modules/**' })
+  //     commonjs({ include: '**/node_modules/**' }),
+  //     commonjs({ include: './src/js/grammars/*.js' }),
+  //     terser()
   //   ]
   // }
 ]

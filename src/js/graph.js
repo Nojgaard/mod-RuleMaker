@@ -1,8 +1,14 @@
+import jquery from 'jquery'
 import cytoscape from 'cytoscape'
-import edgehandles from './cytoscape/cytoscape-edgehandles'
+import edgehandles from 'cytoscape-edgehandles'
+import undoRedo from 'cytoscape-undo-redo'
+import clipboard from 'cytoscape-clipboard'
+import popper from 'cytoscape-popper';
 
-
-cytoscape.use( edgehandles );
+// cytoscape.use(edgehandles);
+// cytoscape.use(popper)
+// cytoscape.use( undoRedo );
+// clipboard( cytoscape, jquery );
 
 const LabelType = {
     STATIC: "STATIC",
@@ -44,7 +50,7 @@ class Label {
 }
 
 
-class Graph {
+export class Graph {
     constructor(container, styles = [], addListeners = true) {
         this.cy = cytoscape({
             container: container,
@@ -279,6 +285,7 @@ class Graph {
         var self = this;
         if (addListeners) {
             let defaults = {
+                preview: true,
                 edgeParams: function (source, target, t) {
                     console.log("adding edge: (", source.id(), ",", target.id(), ")");
                     var srcT = source.data("type");
@@ -295,28 +302,28 @@ class Graph {
             };
             this.eh = this.cy.edgehandles(defaults);
 
-            // var tappedBefore = null;
-            // var tappedTimeout;
-            // var self = this;
-            // this.cy.on('tap', function (event) {
-            //     if (event.target !== self.cy) {
-            //         return;
-            //     }
-            //     var tappedNow = event.cyTarget;
-            //     if (tappedTimeout && tappedBefore) {
-            //         clearTimeout(tappedTimeout);
-            //     }
-            //     if (tappedBefore === tappedNow) {
-            //         tappedBefore = null;
-            //         var pos = event.renderedPosition;
-            //         // n = addNode(cy, pos);
-            //         var n = self.addNode("C", pos);
-            //         n.select();
-            //     } else {
-            //         tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
-            //         tappedBefore = tappedNow;
-            //     }
-            // });
+            var tappedBefore = null;
+            var tappedTimeout;
+            var self = this;
+            this.cy.on('tap', function (event) {
+                if (event.target !== self.cy) {
+                    return;
+                }
+                var tappedNow = event.cyTarget;
+                if (tappedTimeout && tappedBefore) {
+                    clearTimeout(tappedTimeout);
+                }
+                if (tappedBefore === tappedNow) {
+                    tappedBefore = null;
+                    var pos = event.renderedPosition;
+                    // n = addNode(cy, pos);
+                    var n = self.addNode("C", pos);
+                    n.select();
+                } else {
+                    tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
+                    tappedBefore = tappedNow;
+                }
+            });
 
             // var onSelect = function (event) {
             //     var src = event.target.source().id();
@@ -348,74 +355,74 @@ class Graph {
             });
         }
 
-        // this.cy.id = this.cy.nodes(":selectable").length
-        // this.showChemView = true;
-        // this.showConstraints = true;
+        this.cy.id = this.cy.nodes(":selectable").length
+        this.showChemView = true;
+        this.showConstraints = true;
 
-        // var cbOptions = {
+        var cbOptions = {
 
-        //     // The following 4 options allow the user to provide custom behavior to
-        //     // the extension. They can be used to maintain consistency of some data
-        //     // when elements are duplicated.
-        //     // These 4 options are set to null by default. The function prototypes
-        //     // are provided below for explanation purpose only.
+            // The following 4 options allow the user to provide custom behavior to
+            // the extension. They can be used to maintain consistency of some data
+            // when elements are duplicated.
+            // These 4 options are set to null by default. The function prototypes
+            // are provided below for explanation purpose only.
 
-        //     // Function executed on the collection of elements being copied, before
-        //     // they are serialized in the clipboard
-        //     beforeCopy: function (eles) { },
-        //     // Function executed on the clipboard just after the elements are copied.
-        //     // clipboard is of the form: {nodes: json, edges: json}
-        //     afterCopy: function (clipboard) { },
-        //     // Function executed on the clipboard right before elements are pasted,
-        //     // when they are still in the clipboard.
-        //     beforePaste: function (clipboard) {
-        //     },
-        //     oldIdToNewId: function (cb) {
-        //         var idMap = new Map();
-        //         cb.nodes.forEach(n => {
-        //             idMap.set(n.data.id, self.cy.id);
-        //             self.cy.id += 1;
-        //         });
-        //         return idMap;
-        //     },
-        //     // Function executed on the collection of pasted elements, after they
-        //     // are pasted.
-        //     afterPaste: function (eles) {
+            // Function executed on the collection of elements being copied, before
+            // they are serialized in the clipboard
+            beforeCopy: function (eles) { },
+            // Function executed on the clipboard just after the elements are copied.
+            // clipboard is of the form: {nodes: json, edges: json}
+            afterCopy: function (clipboard) { },
+            // Function executed on the clipboard right before elements are pasted,
+            // when they are still in the clipboard.
+            beforePaste: function (clipboard) {
+            },
+            oldIdToNewId: function (cb) {
+                var idMap = new Map();
+                cb.nodes.forEach(n => {
+                    idMap.set(n.data.id, self.cy.id);
+                    self.cy.id += 1;
+                });
+                return idMap;
+            },
+            // Function executed on the collection of pasted elements, after they
+            // are pasted.
+            afterPaste: function (eles) {
 
-        //     }
-        // };
+            }
+        };
 
-        // this.cb = this.cy.clipboard(cbOptions);
-        // this.poppers = [];
-        // this.updatePoppers();
+        this.cb = this.cy.clipboard(cbOptions);
+        this.poppers = [];
+        this.updatePoppers();
 
-        // var options = {
-        //     isDebug: true, // Debug mode for console messages
-        //     // actions: {},// actions to be added
-        //     undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
-        //     stackSizeLimit: undefined, // Size limit of undo stack, note that the size of redo stack cannot exceed size of undo stack
-        //     ready: function () { // callback when undo-redo is ready
+        var options = {
+            isDebug: true, // Debug mode for console messages
+            // actions: {},// actions to be added
+            undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
+            stackSizeLimit: undefined, // Size limit of undo stack, note that the size of redo stack cannot exceed size of undo stack
+            ready: function () { // callback when undo-redo is ready
 
-        //     }
-        // }
+            }
+        }
 
-        // this.ur = this.cy.ur = this.cy.undoRedo(options); // Can also be set whenever wanted.
+        this.ur = this.cy.ur = this.cy.undoRedo(options); // Can also be set whenever wanted.
 
-        // this.ur.action("data", function (args) {
-        //     if (args.firstTime) {
-        //         args.backup = new Map();
-        //         args.eles.forEach(e => {
-        //             args.backup.set(e.id(), e.data(args.name));
-        //         });
-        //     }
-        //     args.eles.data(args.name, args.data);
-        //     return args;
-        // }, function (args) {
-        //     args.eles.forEach(e => {
-        //         e.data(args.name, args.backup.get(e.id()));
-        //     });
-        //     return args;
-        // });
+        this.ur.action("data", function (args) {
+            if (args.firstTime) {
+                args.backup = new Map();
+                args.eles.forEach(e => {
+                    args.backup.set(e.id(), e.data(args.name));
+                });
+            }
+            args.eles.data(args.name, args.data);
+            return args;
+        }, function (args) {
+            args.eles.forEach(e => {
+                e.data(args.name, args.backup.get(e.id()));
+            });
+            return args;
+        });
 
     }
 

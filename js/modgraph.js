@@ -289,6 +289,7 @@ class ModGraph {
         var self = this;
         if (addListeners) {
             let defaults = {
+                preview: true,
                 edgeParams: function (source, target, t) {
                     console.log("adding edge: (", source.id(), ",", target.id(), ")");
                     var srcT = source.data("type");

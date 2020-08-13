@@ -1,14 +1,15 @@
-import {Graph} from './graph'
-import {Span} from './span'
+import { Graph } from './graph'
+import { Span } from './span'
 import Mousetrap from 'mousetrap'
 import $ from 'jquery'
-import {mod_service} from './mod_service'
-import modgraphGML  from './grammars/modgraph-gml'
-import modruleGML  from './grammars/modrule-gml'
-import {saveAs} from 'file-saver'
+import { mod_service } from './mod_service'
+import modgraphGML from './grammars/modgraph-gml'
+import modruleGML from './grammars/modrule-gml'
+import { saveAs } from 'file-saver'
 
-document.addEventListener('DOMContentLoaded', function () {
-    console.log(MODviz)
+// document.addEventListener('DOMContentLoaded', function () {
+window.addEventListener("load", function () {
+    console.log("CONTRAINER", document.getElementById('cy'))
     var mograph = window.modgraph = new MODviz.Graph(document.getElementById('cy'));
 
 
@@ -245,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    Mousetrap(document.getElementById('txtSmiles')).bind('enter', function(e) {
+    Mousetrap(document.getElementById('txtSmiles')).bind('enter', function (e) {
         document.getElementById('btnSmiles').click();
     });
 

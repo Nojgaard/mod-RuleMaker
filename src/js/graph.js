@@ -993,7 +993,7 @@ export class Graph {
     }
 
     readDPOSPan(span) {
-        this.clear();
+        this.cy.remove(this.cy.elements());
         this.cy.id = span.K.cy.nodes().length;
         this.cy.add(span.K.cy.elements(":selectable"));
         this.cy.fit();

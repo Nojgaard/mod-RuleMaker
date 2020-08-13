@@ -58,8 +58,6 @@ export default {
     },
   },
   mounted() {
-    console.log(this.$refs.modal);
-    console.log(this.$refs.input);
     $(this.$refs.modal).on("shown.bs.modal", this.focusInput);
   },
 };

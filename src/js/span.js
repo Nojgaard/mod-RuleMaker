@@ -1,4 +1,4 @@
-import {Graph, Label, LabelType} from './graph'
+import { Graph, Label, LabelType } from './graph'
 
 export class Span {
 
@@ -89,7 +89,7 @@ export class Span {
                                 type: edge.data("type"),
                                 chemview: edge.data("chemview")
                             },
-                          //  classes: classes
+                            //  classes: classes
                         });
 
                         // self[U].cy.add({
@@ -213,7 +213,7 @@ export class Span {
 
         this.nodeId = this.K.cy.nodes().length;
 
-        var onMouseMove = function(e) {
+        var onMouseMove = function (e) {
             var pos = e.position || e.cyPosition;
             self.graphs().forEach(g => {
                 g.cy.mouseX = pos.x;
@@ -222,6 +222,8 @@ export class Span {
         };
         self.graphs().forEach(g => {
             g.cy.on("mousemove", onMouseMove);
+
+            g.cy.id = self.nodeId;
         });
     }
 
@@ -251,16 +253,16 @@ export class Span {
 
     renameSelected(rawLabel) {
         var self = this;
-        this.L.renameSelected(rawLabel, function(lbl) {
+        this.L.renameSelected(rawLabel, function (lbl) {
             if (lbl.type === LabelType.RENAME) {
                 return lbl.left;
             } else {
                 return lbl.toString();
             };
-            
+
         });
         this.K.renameSelected(rawLabel);
-        this.R.renameSelected(rawLabel, function(lbl) {
+        this.R.renameSelected(rawLabel, function (lbl) {
             if (lbl.type === LabelType.RENAME) {
                 return lbl.right;
             } else {
@@ -296,7 +298,7 @@ export class Span {
 
     }
 
-    copySelected()  {
+    copySelected() {
         var self = this;
         this.graphs().forEach(g => {
             g.copySelected(g === self.R);
@@ -346,7 +348,7 @@ export class Span {
         this.K.cy.elements().forEach(e => {
             var type = e.data("type");
             var label = e.data("label");
-            if (type === LabelType.CREATE && label.slice(0,1) !== "/") {
+            if (type === LabelType.CREATE && label.slice(0, 1) !== "/") {
 
                 label = "/" + label;
             } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
@@ -390,7 +392,7 @@ export class Span {
 
     readJsonRule(jsonRule) {
         console.log("DPOSpan.readJsonRule()")
-        this.L.readJsonRule(jsonRule, function(lbl) {
+        this.L.readJsonRule(jsonRule, function (lbl) {
             if (lbl.type === LabelType.RENAME) {
                 return lbl.left;
             } else {
@@ -398,7 +400,7 @@ export class Span {
             }
         });
         this.K.readJsonRule(jsonRule);
-        this.R.readJsonRule(jsonRule, function(lbl) {
+        this.R.readJsonRule(jsonRule, function (lbl) {
             if (lbl.type === LabelType.RENAME) {
                 return lbl.right;
             } else {
@@ -412,9 +414,9 @@ export class Span {
     }
 
     readModGraph(modgraph) {
-        this.nodeId =  modgraph.cy.id;
+        this.nodeId = modgraph.cy.id;
         this.graphs().forEach(g => {
-            g.clear();
+            g.cy.remove(g.cy.elements());
             g.cy.add(modgraph.cy.elements(":selectable"));
             g.cy.fit();
             g.showChemView = modgraph.showChemView;

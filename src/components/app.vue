@@ -28,7 +28,6 @@
 
 <script>
 window.addEventListener("load", function () {
-  console.log("CONTRAINER", document.getElementById("cy"));
   var modviz = (window.modviz = new MODviz.Graph(
     document.getElementById("cy")
   ));

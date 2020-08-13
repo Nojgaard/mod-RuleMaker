@@ -40,30 +40,34 @@
         data-target="#modalConstraints"
       >Add Constraints Selected</button>
       <div class="dropdown-divider"></div>
-      <button id="btnClearGraph" class="dropdown-item">Clear Graph</button>
+      <button v-on:click="clear" class="dropdown-item">Clear Graph</button>
     </div>
   </li>
 </template>
 
 <script>
 export default {
-    methods: {
-        undo: function(event) {
-            modviz.undo();
-        },
+  methods: {
+    undo: function (event) {
+      modviz.undo();
+    },
 
-        redo: function(event) {
-            modviz.redo();
-        },
+    redo: function (event) {
+      modviz.redo();
+    },
 
-        copy: function(event) {
-            modviz.copySelected();
-        },
+    copy: function (event) {
+      modviz.copySelected();
+    },
 
-        paste: function(event) {
-            modviz.paste();
-        }
-    }
+    paste: function (event) {
+      modviz.paste();
+    },
+
+    clear: function (event) {
+      modviz.clear();
+    },
+  },
 };
 </script>
 

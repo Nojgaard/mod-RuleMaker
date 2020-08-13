@@ -2,7 +2,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
 import vue from 'rollup-plugin-vue2'
-import { terser } from "rollup-plugin-terser";
+// import { terser } from "rollup-plugin-terser";
 import replace from '@rollup/plugin-replace';
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
@@ -27,6 +27,7 @@ const configs = [
       name,
       sourcemap: 'inline'
     },
+    cache: 'rollup',
     plugins: [
       replace(envVariables),
       vue({include: './src/components/**/*.vue'}),
@@ -34,10 +35,10 @@ const configs = [
         extensions: ['.css'],
       }),
       nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
+      commonjs({ include: '**/node_modules/**', sourceMap: false }),
       commonjs({ include: './src/js/grammars/*.js' }),
       
-    ]
+    ],
   },
 
   // {

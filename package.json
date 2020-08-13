@@ -32,8 +32,9 @@
   },
   "scripts": {
     "build": "rollup -c",
+    "watch": "rollup -c -w",
     "build-grammars": "pegjs ./src/js/grammars/modgraph-gml.pegjs && pegjs ./src/js/grammars/modrule-gml.pegjs",
-    "server": "./src/server/run.sh"
+    "start": "./src/server/run.sh"
   },
   "repository": {
     "type": "git",

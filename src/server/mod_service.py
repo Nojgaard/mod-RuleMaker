@@ -15,6 +15,28 @@ async def sendLog(ws, s):
 	msgObj = {"type": "log", "data": s}
 	await send(ws, msgObj)
 
+# def _jsonGraph(g):
+# 	out = {
+# 		"nodes": [],
+# 		"edges": []
+# 	}
+# 	for v in g.vertices:
+# 		out["nodes"].append({
+# 			"id": v.id
+# 			"label": v.stringLabel,
+# 			"charge": v.charge,
+# 			"isotope": v.isotope,
+# 			"radical": v.radical
+# 		})
+	
+# 	for e in g.edges:
+# 		out["edges"].append({
+# 			"source": e.source.id,
+# 			"target": e.target.id,
+# 			"label": e.stringLabel,
+# 			"bondType": str(e.bondType)
+# 		})
+
 
 def _loadGraph(data):
 	typ = data["type"]
@@ -22,7 +44,8 @@ def _loadGraph(data):
 	if typ == "smiles":
 		return mod.smiles(arg, add=False)
 	elif typ == "graphGML": 
-		return mod.graphGMLString(arg, add=False)
+		g = mod.graphGMLString(arg, add=False)
+		return g
 	else:
 		msg = "Internal error: unknown graph type '%s'." % typ
 		print(msg)

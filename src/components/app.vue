@@ -169,4 +169,23 @@ h1 {
   border-style: solid;
   border-color: transparent transparent #343a40 transparent;
 }
+
+.html-node {
+  padding-bottom: 4px;
+  cursor: default;
+  /* line-height: 1;
+  vertical-align: middle; */
+}
+
+sub {
+  vertical-align: sub;
+  font-size: medium;
+
+}
+
+sup {
+  vertical-align: super;
+  font-size: small;
+  top: 0;
+}
 </style>

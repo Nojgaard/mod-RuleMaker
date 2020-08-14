@@ -1,4 +1,5 @@
-import { Graph, Label, LabelType } from './graph'
+import { Graph } from './graph'
+import LabelData from './label'
 
 export class Span {
 
@@ -12,7 +13,13 @@ export class Span {
                     'visibility': 'hidden'
                 }
             }
-        ], addListeners);
+        ], addListeners, {
+            label: function (data) {
+                if (data.type === LabelData.TYPE.CREATE) { return ""; }
+
+                return data.labelData.left.toHTML();
+            }
+        });
         this.K = new Graph(containerMiddle, [
             {
                 selector: '[type="CREATE"],[type="REMOVE"]',
@@ -20,7 +27,14 @@ export class Span {
                     'visibility': 'hidden'
                 }
             }
-        ], addListeners);
+        ], addListeners, {
+            label: function (data) {
+                if (data.type === LabelData.TYPE.CREATE || data.type === LabelData.TYPE.REMOVE) { return ""; }
+
+                return data.labelData.toHTML();
+            }
+        });
+
         this.R = new Graph(containerRight, [
             {
                 selector: '[type="REMOVE"]',
@@ -28,7 +42,12 @@ export class Span {
                     'visibility': 'hidden'
                 }
             }
-        ], addListeners);
+        ], addListeners, {
+            label: function (data) {
+                if (data.type === LabelData.TYPE.REMOVE) { return ""; }
+                return data.labelData.right.toHTML();
+            }
+        });
 
         var self = this;
 
@@ -37,15 +56,15 @@ export class Span {
             let defaults = {
                 edgeParams(sourceNode, targetNode, i) {
 
-                    if (sourceNode.data('type') === LabelType.CREATE ||
-                        targetNode.data('type') === LabelType.CREATE) {
-                        var parsedLabel = new Label('/-');
+                    if (sourceNode.data('type') === LabelData.TYPE.CREATE ||
+                        targetNode.data('type') === LabelData.TYPE.CREATE) {
+                        var parsedLabel = new LabelData('/-', 'edge');
                     } else if (
-                        sourceNode.data('type') === LabelType.REMOVE ||
-                        targetNode.data('type') === LabelType.REMOVE) {
-                        var parsedLabel = new Label('-/');
+                        sourceNode.data('type') === LabelData.TYPE.REMOVE ||
+                        targetNode.data('type') === LabelData.TYPE.REMOVE) {
+                        var parsedLabel = new LabelData('-/', 'edge');
                     } else {
-                        var parsedLabel = new Label('-');
+                        var parsedLabel = new LabelData('-', 'edge');
                     }
                     return {
                         group: 'edges',
@@ -254,7 +273,7 @@ export class Span {
     renameSelected(rawLabel) {
         var self = this;
         this.L.renameSelected(rawLabel, function (lbl) {
-            if (lbl.type === LabelType.RENAME) {
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 return lbl.left;
             } else {
                 return lbl.toString();
@@ -263,7 +282,7 @@ export class Span {
         });
         this.K.renameSelected(rawLabel);
         this.R.renameSelected(rawLabel, function (lbl) {
-            if (lbl.type === LabelType.RENAME) {
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 return lbl.right;
             } else {
                 return lbl.toString();
@@ -348,10 +367,10 @@ export class Span {
         this.K.cy.elements().forEach(e => {
             var type = e.data("type");
             var label = e.data("label");
-            if (type === LabelType.CREATE && label.slice(0, 1) !== "/") {
+            if (type === LabelData.TYPE.CREATE && label.slice(0, 1) !== "/") {
 
                 label = "/" + label;
-            } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
+            } else if (type === LabelData.TYPE.REMOVE && label.slice(-1) !== "/") {
                 label = label + "/";
             }
             e.data("label", label);
@@ -359,13 +378,13 @@ export class Span {
     }
 
     toGMLGraph() {
-        this.prepareContextLabels();
+        // this.prepareContextLabels();
         return this.K.toGMLGraph();
     }
 
     toGMLRule() {
-        console.log("DPOSpan: toGMLRule()");
-        this.prepareContextLabels();
+        // console.log("DPOSpan: toGMLRule()");
+        //this.prepareContextLabels();
 
         return this.K.toGMLRule();
     }
@@ -393,7 +412,7 @@ export class Span {
     readJsonRule(jsonRule) {
         console.log("DPOSpan.readJsonRule()")
         this.L.readJsonRule(jsonRule, function (lbl) {
-            if (lbl.type === LabelType.RENAME) {
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 return lbl.left;
             } else {
                 return lbl.toString();
@@ -401,7 +420,7 @@ export class Span {
         });
         this.K.readJsonRule(jsonRule);
         this.R.readJsonRule(jsonRule, function (lbl) {
-            if (lbl.type === LabelType.RENAME) {
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 return lbl.right;
             } else {
                 return lbl.toString();
@@ -425,16 +444,16 @@ export class Span {
             g.cy.id = modgraph.cy.id;
         });
 
-        this.L.cy.elements("[label]").forEach(e => {
-            var lbl = new Label(e.data("label"));
-            if (lbl.type === LabelType.RENAME) {
+        this.L.cy.edges("[labelData]").forEach(e => {
+            let lbl = e.data("labelData");
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 e.data("label", lbl.left);
             }
         });
 
-        this.R.cy.elements("[label]").forEach(e => {
-            var lbl = new Label(e.data("label"));
-            if (lbl.type === LabelType.RENAME) {
+        this.R.cy.edges("[labelData]").forEach(e => {
+            var lbl = e.data("labelData");
+            if (lbl.type === LabelData.TYPE.RENAME) {
                 e.data("label", lbl.right);
             }
         });

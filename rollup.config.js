@@ -35,7 +35,7 @@ const configs = [
         extensions: ['.css'],
       }),
       nodeResolve(),
-      commonjs({ include: '**/node_modules/**', sourceMap: false }),
+      commonjs({ include: '**/node_modules/**' }),
       commonjs({ include: './src/js/grammars/*.js' }),
       
     ],

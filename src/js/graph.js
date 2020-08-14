@@ -4,54 +4,32 @@ import edgehandles from 'cytoscape-edgehandles'
 import undoRedo from 'cytoscape-undo-redo'
 import clipboard from 'cytoscape-clipboard'
 import popper from 'cytoscape-popper';
+import nodeHtmlLabel from 'cytoscape-node-html-label'
+import $ from 'jquery'
+
+import LabelData from './label'
 
 cytoscape.use(edgehandles);
 cytoscape.use(popper)
 cytoscape.use( undoRedo );
 clipboard( cytoscape, jquery );
+nodeHtmlLabel( cytoscape );
 
-export const LabelType = {
-    STATIC: "STATIC",
-    REMOVE: "REMOVE",
-    CREATE: "CREATE",
-    RENAME: "RENAME"
-}
-
-export class Label {
-    constructor(lbl) {
-        var splitLbl = lbl.split("/");
-        this.left = "";
-        this.right = "";
-        if (splitLbl.length === 1) {
-            this.type = LabelType.STATIC;
-            this.left = lbl;
-        } else if (splitLbl[0].length === 0) {
-            this.type = LabelType.CREATE;
-            this.right = splitLbl[1];
-        } else if (splitLbl[1].length == 0) {
-            this.type = LabelType.REMOVE;
-            this.left = splitLbl[0];
-        } else {
-            this.type = LabelType.RENAME;
-            this.left = splitLbl[0];
-            this.right = splitLbl[1];
-        }
+const defaults = {
+    label: function(data) {
+        return data.labelData.toHTML();
     }
-
-    toString() {
-        if (this.left === "") {
-            return this.right;
-        } else if (this.right === "") {
-            return this.left;
-        } else {
-            return this.left + "/" + this.right;
-        }
-    }
-}
-
+};
 
 export class Graph {
-    constructor(container, styles = [], addListeners = true) {
+    constructor(container, styles = [], addListeners = true, opts = {}) {
+        const defaults = {
+            label: function(data) {
+                return data.labelData.toHTML();
+            }
+        };
+        
+        opts = $.extend(defaults, opts);
         this.cy = cytoscape({
             container: container,
 
@@ -65,7 +43,7 @@ export class Graph {
                 {
                     selector: 'node[label]',
                     style: {
-                        'label': 'data(label)',
+                        // 'label': 'data(label)',
                         'color': '#343a40',
                         //  'background-color': 'data(color)',
                         "text-valign": "center",
@@ -263,17 +241,17 @@ export class Graph {
                 nodes: [
                     {
                         data: {
-                            id: 0, label: 'C', type: "STATIC",
+                            id: 0, type: "STATIC", labelData: new LabelData("C"),
                             constraints: [
                                 { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] },
                                 { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] }
                             ]
                         }
                     },
-                    { data: { id: 1, label: 'C', type: "STATIC" } },
+                    { data: { id: 1, type: "STATIC", labelData: new LabelData("C")} },
                 ],
                 edges: [
-                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true } }
+                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true, labelData: new LabelData("=") } }
                 ]
             },
             // renderer: {
@@ -290,9 +268,9 @@ export class Graph {
                     console.log("adding edge: (", source.id(), ",", target.id(), ")");
                     var srcT = source.data("type");
                     var tarT = target.data("type");
-                    if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
+                    if (srcT === LabelData.TYPE.CREATE || tarT === LabelData.TYPE.CREATE) {
                         var rawLabel = '/-';
-                    } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
+                    } else if (srcT === LabelData.TYPE.REMOVE || tarT === LabelData.TYPE.REMOVE) {
                         var rawLabel = '-/';
                     } else {
                         var rawLabel = '-';
@@ -427,6 +405,20 @@ export class Graph {
             return args;
         });
 
+        this.cy.nodeHtmlLabel([
+            {
+              query: 'node[labelData]', // cytoscape query selector
+              halign: 'center', // title vertical position. Can be 'left',''center, 'right'
+              valign: 'center', // title vertical position. Can be 'top',''center, 'bottom'
+              halignBox: 'center', // title vertical position. Can be 'left',''center, 'right'
+              valignBox: 'center', // title relative box vertical position. Can be 'top',''center, 'bottom'
+              cssClass: 'html-node', // any classes will be as attribute of <div> container for every title
+              tpl(data) {
+                return opts.label(data) // your html template here
+              }
+            }
+          ]);
+
     }
 
     updatePoppers() {
@@ -521,14 +513,15 @@ export class Graph {
         this.updatePoppers();
     }
 
-    cyNode(rawLabel, pos, useRenderedPosition = true, lblFun = function (lbl) { return lbl.toString(); }) {
-        var label = new Label(rawLabel);
+    cyNode(rawLabel, pos, useRenderedPosition = true) {
+        //var label = new Label(rawLabel);
+        let labelData = new LabelData(rawLabel, "node");
         var n = {
             group: 'nodes',
             data: {
-                label: lblFun(label),
                 id: this.cy.id,
-                type: label.type
+                type: labelData.type,
+                labelData: labelData
             },
 
         };
@@ -541,16 +534,17 @@ export class Graph {
         return n;
     }
 
-    cyEdge(rawLabel, src, tar) {
-        var label = new Label(rawLabel);
+    cyEdge(rawLabel, src, tar, lblFun = function (lbl) { return lbl.toString(); }) {
+        var label = new LabelData(rawLabel, "edge");
         var e = {
             group: 'edges',
             data: {
                 source: src,
                 target: tar,
-                label: label.toString(),
+                label:  lblFun(label),
                 type: label.type,
-                chemview: this.showChemView
+                chemview: this.showChemView,
+                labelData: label
             }
         };
         return e;
@@ -638,23 +632,13 @@ export class Graph {
         });
 
         edges.forEach(function (edge, key) {
-            var src = nodes.get(edge.src).cyNode.data.id;
-            var tar = nodes.get(edge.tar).cyNode.data.id;
-            var strLbl = edge.left + "/" + edge.right;
+            let src = nodes.get(edge.src).cyNode.data.id;
+            let tar = nodes.get(edge.tar).cyNode.data.id;
+            let strLbl = edge.left + "/" + edge.right;
             if (edge.left === edge.right) {
                 strLbl = edge.left;
             }
-            var lbl = new Label(strLbl);
-            var e = {
-                group: 'edges',
-                data: {
-                    source: src,
-                    target: tar,
-                    label: lblFun(lbl),
-                    type: lbl.type,
-                    chemview: self.showChemView
-                }
-            };
+            let e = self.cyEdge(strLbl, src, tar, lblFun);
             eles.edges.push(e);
         });
 
@@ -720,91 +704,84 @@ export class Graph {
     renameSelected(rawLabel, lblFun = function (label) { return label.toString(); }) {
 
 
-        var lbl = new Label(rawLabel);
-        var eles = this.cy.elements(':selected');
+        let nodeData = new LabelData(rawLabel, "node");
+        let edgeData = new LabelData(rawLabel, "edge");
+        let nodes = this.cy.nodes(":selected");
+        let edges = this.cy.edges(':selected');
+
+        let type = nodeData.type;
+
+        let edgeCreate = this.cy.edges().filter(e => {
+            var srcT = e.source().selected() ? type : e.source().data("type");
+            var tarT = e.target().selected() ? type : e.target().data("type");
+            return srcT === LabelData.TYPE.CREATE || tarT === LabelData.TYPE.CREATE;
+        });
+
+        let edgeRemove = this.cy.edges().filter(e => {
+            var srcT = e.source().selected() ? type : e.source().data("type");
+            var tarT = e.target().selected() ? type : e.target().data("type");
+            return srcT === LabelData.TYPE.REMOVE || tarT === LabelData.TYPE.REMOVE;
+        });
 
         var actionList = [
             {
                 name: "data", param: {
                     name: "label",
-                    eles: eles,
-                    data: lblFun(lbl)
+                    eles: nodes,
+                    data: nodeData.toString()
                 }
             },
-            {
-                name: "data", param: {
-                    name: "type",
-                    eles: eles,
-                    data: lbl.type
-                }
-            },
-        ]
-
-        var edgeCreate = this.cy.edges().filter(e => {
-            var srcT = e.source().selected() ? lbl.type : e.source().data("type");
-            var tarT = e.target().selected() ? lbl.type : e.target().data("type");
-            return srcT === LabelType.CREATE || tarT === LabelType.CREATE;
-        });
-
-        var edgeRemove = this.cy.edges().filter(e => {
-            var srcT = e.source().selected() ? lbl.type : e.source().data("type");
-            var tarT = e.target().selected() ? lbl.type : e.target().data("type");
-            return srcT === LabelType.REMOVE || tarT === LabelType.REMOVE;
-        });
-
-
-        var actionList = [
             {
                 name: "data", param: {
                     name: "label",
-                    eles: eles,
-                    data: lbl.toString()
+                    eles: edges,
+                    data: edgeData.toString()
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "labelData",
+                    eles: nodes,
+                    data: nodeData
+                }
+            },
+            {
+                name: "data", param: {
+                    name: "labelData",
+                    eles: edges,
+                    data: edgeData
                 }
             },
             {
                 name: "data", param: {
                     name: "type",
-                    eles: eles,
-                    data: lbl.type
+                    eles: nodes.merge(edges),
+                    data: type
                 }
             },
             {
                 name: "data", param: {
                     name: "type",
                     eles: edgeCreate,
-                    data: LabelType.CREATE
+                    data: LabelData.TYPE.CREATE
                 }
             },
             {
                 name: "data", param: {
                     name: "type",
                     eles: edgeRemove,
-                    data: LabelType.REMOVE
+                    data: LabelData.TYPE.REMOVE
                 }
             },
         ]
 
         this.cy.ur.do("batch", actionList);
-        // this.cy.$(':selected').data("type", lbl.type);
-        // this.cy.$(':selected').data("label", lbl.toString());
-
-        // this.cy.edges().forEach(e => {
-        //     var srcT = e.source().data("type");
-        //     var tarT = e.target().data("type");
-        //     var eT = e.data("type");
-        //     if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
-        //         e.data("type", LabelType.CREATE);
-        //     } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
-        //         e.data("type", LabelType.REMOVE);
-        //     }
-        // });
     }
 
     addJsonGraph(jsonGraph) {
         console.log("ModGraph.addJsonGraph()");
 
         var eles = this.jsonGraphToCyEles(jsonGraph);
-        //this.cy.add(eles);
         this.ur.do("add", eles);
     }
 
@@ -839,7 +816,6 @@ export class Graph {
             }
         });
         lay.run();
-        this.updatePoppers();
         this.updatePoppers();
     }
 
@@ -882,10 +858,10 @@ export class Graph {
         this.cy.elements().forEach(e => {
             var type = e.data("type");
             var label = e.data("label");
-            if (type === LabelType.CREATE && label.slice(0, 1) !== "/") {
+            if (type === LabelData.TYPE.CREATE && label.slice(0, 1) !== "/") {
 
                 label = "/" + label;
-            } else if (type === LabelType.REMOVE && label.slice(-1) !== "/") {
+            } else if (type === LabelData.TYPE.REMOVE && label.slice(-1) !== "/") {
                 label = label + "/";
             }
             e.data("rawLabel", label);
@@ -893,17 +869,17 @@ export class Graph {
     }
 
     toGMLGraph() {
-        this.prepareLabels();
+        // this.prepareLabels();
         var out = [];
         out.push("graph [");
         this.cy.nodes(":selectable").forEach(node => {
-            var lbl = node.data("rawLabel");
+            var lbl = node.data("labelData").rawLabel;
             var id = node.data("id");
             out.push("    node [ id " + id + " label \"" + lbl + "\" ]");
         });
 
         this.cy.edges(":selectable[label]").forEach(edge => {
-            var lbl = edge.data("rawLabel");
+            var lbl = edge.data("labelData").rawLabel;
             var src = edge.source().data("id");
             var tar = edge.target().data("id");
             out.push("    edge [ source " + src + " target " + tar + " label \"" + lbl + "\" ]");
@@ -913,7 +889,7 @@ export class Graph {
     }
 
     toGMLRule() {
-        this.prepareLabels();
+        // this.prepareLabels();
         var rule = {
             left: {
                 nodes: [],
@@ -930,34 +906,34 @@ export class Graph {
         };
 
         this.cy.nodes(":selectable").forEach(node => {
-            var lbl = new Label(node.data("rawLabel"));
-            var id = node.data("id");
+            let lbl = node.data("labelData");
+            let id = node.data("id");
 
-            if (lbl.type === LabelType.STATIC) {
-                rule.context.nodes.push({ id: id, label: lbl.left });
-            } else if (lbl.type === LabelType.CREATE) {
-                rule.right.nodes.push({ id: id, label: lbl.right });
-            } else if (lbl.type === LabelType.REMOVE) {
-                rule.left.nodes.push({ id: id, label: lbl.left });
-            } else if (lbl.type === LabelType.RENAME) {
-                rule.left.nodes.push({ id: id, label: lbl.left });
-                rule.right.nodes.push({ id: id, label: lbl.right });
+            if (lbl.type === LabelData.TYPE.STATIC) {
+                rule.context.nodes.push({ id: id, label: lbl.left.toString() });
+            } else if (lbl.type === LabelData.TYPE.CREATE) {
+                rule.right.nodes.push({ id: id, label: lbl.right.toString() });
+            } else if (lbl.type === LabelData.TYPE.REMOVE) {
+                rule.left.nodes.push({ id: id, label: lbl.left.toString() });
+            } else if (lbl.type === LabelData.TYPE.RENAME) {
+                rule.left.nodes.push({ id: id, label: lbl.left.toString() });
+                rule.right.nodes.push({ id: id, label: lbl.right.toString() });
             }
         });
 
-        this.cy.edges(":selectable[label]").forEach(edge => {
-            var lbl = new Label(edge.data("rawLabel"));
-            var src = edge.source().data("id");
-            var tar = edge.target().data("id");
-            if (lbl.type === LabelType.STATIC) {
-                rule.context.edges.push({ src: src, tar: tar, label: lbl.left });
-            } else if (lbl.type === LabelType.CREATE) {
-                rule.right.edges.push({ src: src, tar: tar, label: lbl.right });
-            } else if (lbl.type === LabelType.REMOVE) {
-                rule.left.edges.push({ src: src, tar: tar, label: lbl.left });
-            } else if (lbl.type === LabelType.RENAME) {
-                rule.left.edges.push({ src: src, tar: tar, label: lbl.left });
-                rule.right.edges.push({ src: src, tar: tar, label: lbl.right });
+        this.cy.edges(":selectable[labelData]").forEach(edge => {
+            let lbl = edge.data("labelData");
+            let src = edge.source().data("id");
+            let tar = edge.target().data("id");
+            if (lbl.type === LabelData.TYPE.STATIC) {
+                rule.context.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
+            } else if (lbl.type === LabelData.TYPE.CREATE) {
+                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString()  });
+            } else if (lbl.type === LabelData.TYPE.REMOVE) {
+                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
+            } else if (lbl.type === LabelData.TYPE.RENAME) {
+                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
+                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString()  });
             }
         });
 

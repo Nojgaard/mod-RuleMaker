@@ -5,11 +5,11 @@ nonmolecule
   = str:string { return {
     isotope: null,
     charge: null,
-    label: label
+    label: str
   }
   }
 molecule
-  = isotope:integer? label:string charge:(chargedbl/chargen)?
+  = isotope:integer? label:symbol charge:(chargedbl/chargen)?
   { return {
       isotope: isotope,
       label: label,
@@ -36,4 +36,4 @@ string
 
 
 symbol
-  = str:[a-zA-Z\=#/&()_ ]+ { return str.join(""); }
+  = str:[a-zA-Z]+ { return str.join(""); }

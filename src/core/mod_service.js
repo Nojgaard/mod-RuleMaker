@@ -207,7 +207,8 @@ var onopen = function(event) {
 	}});
 }
 
-export var mod_service = new ModService("127.0.0.1", 5000)
+const mod_service = new ModService("127.0.0.1", 5000)
+export default mod_service;
 
 //connect("127.0.0.1", 5000);
 //connect("modlive.imada.sdu.dk", 8082);

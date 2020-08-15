@@ -16,7 +16,7 @@ cytoscape.use(undoRedo);
 clipboard(cytoscape, jquery);
 nodeHtmlLabel(cytoscape);
 
-export class Graph {
+class Graph {
     constructor(container, opts = {}) {
         let self = this;
 
@@ -137,13 +137,13 @@ export class Graph {
         });
 
         this.ur = this.cy.ur = this.cy.undoRedo({
-            isDebug: true, 
+            isDebug: true,
             // actions: {},// actions to be added
             undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
             stackSizeLimit: undefined, // Size limit of undo stack, note that the size of redo stack cannot exceed size of undo stack
             ready: function () { // callback when undo-redo is ready
             }
-        }); 
+        });
 
         this.ur.action("data", function (args) {
             if (args.firstTime) {
@@ -748,4 +748,4 @@ export class Graph {
     }
 }
 
-// export default Graph;
+export default Graph;

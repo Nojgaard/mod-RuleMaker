@@ -11,6 +11,7 @@ class NodeData {
     constructor(label) {
         console.log("PARSING ", label);
         let data = parseLabel.parse(label);
+        console.log(data);
         this.isotope = data.isotope;
         this.label = data.label;
         this.charge = data.charge;

@@ -8,7 +8,7 @@ import replace from '@rollup/plugin-replace';
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 // const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 
-const input = './src/js/index.js';
+const input = './src/index.js';
 
 const name = 'MODviz';
 const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
@@ -30,13 +30,13 @@ const configs = [
     cache: 'rollup',
     plugins: [
       replace(envVariables),
-      vue({include: './src/components/**/*.vue'}),
+      vue({include: './src/**/*.vue'}),
       postcss({
         extensions: ['.css'],
       }),
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
-      commonjs({ include: './src/js/grammars/*.js' }),
+      commonjs({ include: './src/core/grammars/*.js' }),
       
     ],
   },

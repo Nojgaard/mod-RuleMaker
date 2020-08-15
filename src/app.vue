@@ -27,16 +27,17 @@
 </template>
 
 <script>
+import {Graph} from "./core"
 window.addEventListener("load", function () {
-  var modviz = (window.modviz = new MODviz.Graph(
+  var modviz = (window.modviz = new Graph(
     document.getElementById("cy")
   ));
 });
 
-import taskbar from "./taskbar/taskbar.vue";
-import modalAddSmiles from "./modals/add-smiles.vue";
-import modalRenameSelected from "./modals/rename-selected.vue";
-import modalAddConstraints from "./modals/add-constraints.vue";
+import taskbar from "./components/taskbar/taskbar.vue";
+import modalAddSmiles from "./components/modals/add-smiles.vue";
+import modalRenameSelected from "./components/modals/rename-selected.vue";
+import modalAddConstraints from "./components/modals/add-constraints.vue";
 
 import Mousetrap from "mousetrap";
 import $ from "jquery";

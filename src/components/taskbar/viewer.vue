@@ -19,8 +19,7 @@
 </template>
 
 <script>
-import {Span} from '../../js/span'
-import {Graph} from '../../js/graph'
+import {Span, Graph} from '../../core'
 
 export default {
   methods: {

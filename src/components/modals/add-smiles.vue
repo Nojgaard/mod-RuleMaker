@@ -26,8 +26,7 @@
 </template>
 
 <script>
-import { mod_service } from "../../js/mod_service";
-import modgraphGML from "../../js/grammars/modgraph-gml";
+import { modService, modgraphGML} from "../../core";
 import $ from "jquery";
 
 export default {

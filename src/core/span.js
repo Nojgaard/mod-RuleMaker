@@ -1,7 +1,7 @@
-import { Graph } from './graph'
+import Graph from './graph'
 import LabelData from './label'
 
-export class Span {
+class Span {
 
     constructor(containerLeft, containerMiddle, containerRight) {
         let self = this;
@@ -369,14 +369,14 @@ export class Span {
         this.L.cy.edges("[labelData]").forEach(e => {
             let lbl = e.data("labelData");
             if (lbl.type === LabelData.TYPE.RENAME) {
-                e.data("label", lbl.left);
+                e.data("label", lbl.left.toString());
             }
         });
 
         this.R.cy.edges("[labelData]").forEach(e => {
             var lbl = e.data("labelData");
             if (lbl.type === LabelData.TYPE.RENAME) {
-                e.data("label", lbl.right);
+                e.data("label", lbl.right.toString());
             }
         });
     }
@@ -410,4 +410,4 @@ export class Span {
     }
 }
 
-// export default Span;
+export default Span;

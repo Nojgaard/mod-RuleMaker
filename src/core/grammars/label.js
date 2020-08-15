@@ -145,7 +145,7 @@ function peg$parse(input, options) {
       peg$c1 = function(str) { return {
           isotope: null,
           charge: null,
-          label: label
+          label: str
         }
         },
       peg$c2 = function(isotope, label, charge) { return {
@@ -175,8 +175,8 @@ function peg$parse(input, options) {
       peg$c16 = /^[a-zA-Z0-9+=\-#\/&()_ ]/,
       peg$c17 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"], "+", "=", "-", "#", "/", "&", "(", ")", "_", " "], false, false),
       peg$c18 = function(str) { return str.join(""); },
-      peg$c19 = /^[a-zA-Z=#\/&()_ ]/,
-      peg$c20 = peg$classExpectation([["a", "z"], ["A", "Z"], "=", "#", "/", "&", "(", ")", "_", " "], false, false),
+      peg$c19 = /^[a-zA-Z]/,
+      peg$c20 = peg$classExpectation([["a", "z"], ["A", "Z"]], false, false),
 
       peg$currPos          = 0,
       peg$savedPos         = 0,
@@ -354,7 +354,7 @@ function peg$parse(input, options) {
       s1 = null;
     }
     if (s1 !== peg$FAILED) {
-      s2 = peg$parsestring();
+      s2 = peg$parsesymbol();
       if (s2 !== peg$FAILED) {
         s3 = peg$parsechargedbl();
         if (s3 === peg$FAILED) {

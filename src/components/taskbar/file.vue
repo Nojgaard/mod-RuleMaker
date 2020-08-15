@@ -26,9 +26,7 @@
 </template>
 
 <script>
-import {mod_service} from '../../js/mod_service'
-import modgraphGML from '../../js/grammars/modgraph-gml'
-import modruleGML from '../../js/grammars/modrule-gml'
+import {modService, modgraphGML, modruleGML} from '../../core'
 import { saveAs } from 'file-saver'
 
 export default {
@@ -55,7 +53,7 @@ export default {
           type: "ruleGML",
           data: text,
         };
-        mod_service.send("getRuleCoords", data, function (response) {
+        modService.send("getRuleCoords", data, function (response) {
           try {
             var jRule = modruleGML.parse(response.ruleGML);
           } catch (e) {
@@ -79,7 +77,7 @@ export default {
           type: "graphGML",
           data: text,
         };
-        mod_service.send("getGraphCoords", data, function (response) {
+        modService.send("getGraphCoords", data, function (response) {
           try {
             var jsonGraph = modgraphGML.parse(response.graphGML);
           } catch (e) {

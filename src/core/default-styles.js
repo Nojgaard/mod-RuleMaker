@@ -1,4 +1,10 @@
 const styles = [
+    {
+        selector: 'node',
+        style: {
+          //  'width': '50'
+        }
+    },
 
     {
         selector: 'edge[label]',

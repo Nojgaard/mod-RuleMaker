@@ -16,8 +16,7 @@
 </template>
 
 <script>
-import modruleGML from "../../js/grammars/modrule-gml";
-import {mod_service} from '../../js/mod_service'
+import {modService, modruleGML} from '../../core';
 
 export default {
   methods: {
@@ -26,7 +25,7 @@ export default {
         type: "ruleGML",
         data: modviz.toGMLRule(),
       };
-      mod_service.send("getRuleCoords", data, function (response) {
+      modService.send("getRuleCoords", data, function (response) {
         try {
           console.log(response);
           var jRule = modruleGML.parse(response.ruleGML);

@@ -36,7 +36,11 @@ export default {
         type: "smiles",
         data: document.getElementById("txtSmiles").value,
       };
-      mod_service.send("getGraphCoords", data, function (response) {
+      modService.send("getGraphCoords", data, function (response) {
+        if (response.hasOwnProperty("error")) {
+          modvizApp.$refs.modalException.showException(response.error);
+          return;
+        }
         try {
           console.log(response);
           var gRule = modgraphGML.parse(response.graphGML);

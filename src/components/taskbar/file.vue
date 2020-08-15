@@ -10,7 +10,7 @@
     >File</a>
     <!-- ITEMS -->
     <div class="dropdown-menu" aria-labelledby="fileDropDown">
-      <label class="dropdown-item btn-file"   style="cursor:pointer">
+      <label class="dropdown-item btn-file" style="cursor:pointer">
         Load Graph
         <input v-on:change="loadGraph" type="file" style="display: none;" />
       </label>
@@ -26,8 +26,8 @@
 </template>
 
 <script>
-import {modService, modgraphGML, modruleGML} from '../../core'
-import { saveAs } from 'file-saver'
+import { modService, modgraphGML, modruleGML } from "../../core";
+import { saveAs } from "file-saver";
 
 export default {
   methods: {
@@ -54,6 +54,10 @@ export default {
           data: text,
         };
         modService.send("getRuleCoords", data, function (response) {
+          if (response.hasOwnProperty("error")) {
+            modvizApp.$refs.modalException.showException(response.error);
+            return;
+          }
           try {
             var jRule = modruleGML.parse(response.ruleGML);
           } catch (e) {
@@ -78,6 +82,10 @@ export default {
           data: text,
         };
         modService.send("getGraphCoords", data, function (response) {
+          if (response.hasOwnProperty("error")) {
+            modvizApp.$refs.modalException.showException(response.error);
+            return;
+          }
           try {
             var jsonGraph = modgraphGML.parse(response.graphGML);
           } catch (e) {

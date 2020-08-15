@@ -43,6 +43,9 @@ export default {
     "layout-dropdown": layoutDropdown,
     "viewer-dropdown": viewerDropdown,
   },
+
+  mounted() {
+  }
 };
 </script>
 

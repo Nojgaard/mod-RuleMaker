@@ -11,6 +11,9 @@
     <!-- Add Constraints Modal -->
     <modal-add-constraints />
 
+    <!-- Exception Modal -->
+    <modal-exception ref="modalException" />
+
     <!-- Page Content -->
     <div id="page-content-wrapper" class="container-fluid">
       <div id="cy"></div>
@@ -38,6 +41,7 @@ import taskbar from "./components/taskbar/taskbar.vue";
 import modalAddSmiles from "./components/modals/add-smiles.vue";
 import modalRenameSelected from "./components/modals/rename-selected.vue";
 import modalAddConstraints from "./components/modals/add-constraints.vue";
+import modalException from "./components/modals/exception.vue"
 
 import Mousetrap from "mousetrap";
 import $ from "jquery";
@@ -48,9 +52,15 @@ export default {
     "modal-add-smiles": modalAddSmiles,
     "modal-rename-selected": modalRenameSelected,
     "modal-add-constraints": modalAddConstraints,
+    "modal-exception": modalException
+  },
+
+  beforeMount() {
+    window.modvizApp = this;
   },
 
   mounted() {
+
     Mousetrap.bind("del", function (e) {
       modviz.removeSelected();
     });

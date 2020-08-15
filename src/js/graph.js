@@ -8,261 +8,26 @@ import nodeHtmlLabel from 'cytoscape-node-html-label'
 import $ from 'jquery'
 
 import LabelData from './label'
+import defaultStyles from './default-styles'
 
 cytoscape.use(edgehandles);
 cytoscape.use(popper)
-cytoscape.use( undoRedo );
-clipboard( cytoscape, jquery );
-nodeHtmlLabel( cytoscape );
-
-const defaults = {
-    label: function(data) {
-        return data.labelData.toHTML();
-    }
-};
+cytoscape.use(undoRedo);
+clipboard(cytoscape, jquery);
+nodeHtmlLabel(cytoscape);
 
 export class Graph {
-    constructor(container, styles = [], addListeners = true, opts = {}) {
+    constructor(container, opts = {}) {
+        let self = this;
+
         const defaults = {
-            label: function(data) {
+            label: function (data) {
                 return data.labelData.toHTML();
-            }
-        };
-        
-        opts = $.extend(defaults, opts);
-        this.cy = cytoscape({
-            container: container,
-
-            layout: {
-                name: 'grid',
-                rows: 2,
-                cols: 2
             },
 
-            style: [
-                {
-                    selector: 'node[label]',
-                    style: {
-                        // 'label': 'data(label)',
-                        'color': '#343a40',
-                        //  'background-color': 'data(color)',
-                        "text-valign": "center",
-                        "text-halign": "center"
+            style: [],
 
-                    }
-                },
-
-                {
-                    selector: 'edge[label]',
-                    style: {
-                        //  'curve-style': 'bezier',
-                        'curve-style': 'haystack',
-                        'haystack-radius': '0',
-                        'label': function (label) { return (label.data().label + "\n \u2060") },
-                        'text-wrap': 'wrap',
-                        // 'line-color': 'data(color)',
-                        "edge-text-rotation": "autorotate"
-                    }
-                },
-                {
-                    selector: 'node[type="STATIC"]',
-                    style: {
-                        'background-color': '#AAAAAA',
-
-                    }
-                },
-                {
-                    selector: 'node[type="RENAME"]',
-                    style: {
-                        'background-color': '#7FDBFF',
-
-                    }
-                },
-                {
-                    selector: 'node[type="CREATE"]',
-                    style: {
-                        'background-color': '#2ECC40',
-
-                    }
-                },
-                {
-                    selector: 'node[type="REMOVE"]',
-                    style: {
-                        'background-color': '#FF4136',
-
-                    }
-                },
-                {
-                    selector: 'edge[type="STATIC"]',
-                    style: {
-                        'line-color': '#AAAAAA',
-
-                    }
-                },
-                {
-                    selector: 'edge[type="RENAME"]',
-                    style: {
-                        'line-color': '#7FDBFF',
-
-                    }
-                },
-                {
-                    selector: 'edge[type="CREATE"]',
-                    style: {
-                        'line-color': '#2ECC40',
-
-                    }
-                },
-                {
-                    selector: 'edge[type="REMOVE"]',
-                    style: {
-                        'line-color': '#FF4136',
-
-                    }
-                },
-
-                // Some bond styles
-                {
-                    selector: 'edge[label="-"][?chemview]',
-                    style: {
-                        'label': ""
-                    }
-                },
-                {
-                    selector: 'edge[label="="][?chemview]',
-                    style: {
-                        'curve-style': 'segments',
-                        'label': "",
-                        'segment-weights': '0 1.02 1.02 -0.02 1 ',
-                        'segment-distances': '5 5 -5 -5 -5 -5',
-                        //'segment-weights': '1.02 1.02 -0.02 ',
-                        //'segment-distances': '5 -5 -5 -5',
-                    }
-                },
-                {
-                    selector: 'edge[label=":"][?chemview]',
-                    style: {
-                        'curve-style': 'segments',
-                        'label': "",
-                        'segment-weights': '0 1.02 1.02 -0.02 1 ',
-                        'segment-distances': '5 5 -5 -5 -5 -5',
-                        'line-style': 'dotted'
-                    }
-                },
-                {
-                    selector: 'edge[label="#"][?chemview]',
-                    style: {
-                        'curve-style': 'segments',
-                        'label': "",
-                        'segment-weights': '0 1.02 1.02 -0.02 -0.02 ',
-                        'segment-distances': '5 5 -5 -5 0',
-                    }
-                },
-                // Some DPO Span Styles
-                {
-                    selector: '.ghost-elem',
-                    style: {
-                        'visibility': 'hidden'
-                    }
-                },
-
-
-                {
-                    selector: 'node:selected',
-                    style: {
-                        'border-width': '2px',
-                        'border-color': '#343a40'
-                    }
-                },
-                {
-                    selector: 'edge:selected',
-                    style: {
-                        'line-style': 'dashed'
-                    }
-                },
-
-                // some style for the extension
-
-                {
-                    selector: '.eh-handle',
-                    style: {
-                        'background-color': '#343a40',
-                        'width': 12,
-                        'height': 12,
-                        'shape': 'ellipse',
-                        'overlay-opacity': 0,
-                        'border-width': 12, // makes the handle easier to hit
-                        'border-opacity': 0
-                    }
-                },
-
-                {
-                    selector: '.eh-hover',
-                    style: {
-                        'background-color': '#343a40'
-                    }
-                },
-
-                {
-                    selector: '.eh-source',
-                    style: {
-                        'border-width': 2,
-                        'border-color': '#343a40'
-                    }
-                },
-
-                {
-                    selector: '.eh-target',
-                    style: {
-                        'border-width': 2,
-                        'border-color': '#343a40'
-                    }
-                },
-
-                {
-                    selector: '.eh-preview, .eh-ghost-edge',
-                    style: {
-                        'background-color': '#DDDDDD',
-                        'line-color': '#DDDDDD',
-                        'target-arrow-color': '#DDDDDD',
-                        'source-arrow-color': '#DDDDDD'
-                    }
-                },
-
-                {
-                    selector: '.eh-ghost-edge.eh-preview-active',
-                    style: {
-                        'opacity': 0
-                    }
-                }
-            ].concat(styles),
-
-            elements: {
-                nodes: [
-                    {
-                        data: {
-                            id: 0, type: "STATIC", labelData: new LabelData("C"),
-                            constraints: [
-                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] },
-                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] }
-                            ]
-                        }
-                    },
-                    { data: { id: 1, type: "STATIC", labelData: new LabelData("C")} },
-                ],
-                edges: [
-                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true, labelData: new LabelData("=") } }
-                ]
-            },
-            // renderer: {
-            //     name: 'canvas',
-            //     showFps: true
-            //   },
-        });
-
-        var self = this;
-        if (addListeners) {
-            let defaults = {
+            edgeHandleOpts: {
                 preview: true,
                 edgeParams: function (source, target, t) {
                     console.log("adding edge: (", source.id(), ",", target.id(), ")");
@@ -277,87 +42,89 @@ export class Graph {
                     }
                     return self.cyEdge(rawLabel, source.id(), target.id());
                 },
-                addEles: function(cy, eles) {
+                addEles: function (cy, eles) {
                     return cy.ur.do("add", eles);
                 }
-            };
-            this.eh = this.cy.edgehandles(defaults);
+            },
 
-            var tappedBefore = null;
-            var tappedTimeout;
-            var self = this;
-            this.cy.on('tap', function (event) {
-                if (event.target !== self.cy) {
-                    return;
-                }
-                var tappedNow = event.cyTarget;
-                if (tappedTimeout && tappedBefore) {
-                    clearTimeout(tappedTimeout);
-                }
-                if (tappedBefore === tappedNow) {
-                    tappedBefore = null;
-                    var pos = event.renderedPosition;
-                    // n = addNode(cy, pos);
-                    var n = self.addNode("C", pos);
-                    n.select();
-                } else {
-                    tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
-                    tappedBefore = tappedNow;
-                }
-            });
+            dblclick: function (pos) {
+                self.addNode("C", pos).select();
+            },
 
-            // var onSelect = function (event) {
-            //     var src = event.target.source().id();
-            //     var tar = event.target.target().id();
-            //     var sel = "[source = \"" + src + "\"][target = \"" + tar + "\"]";
-            //     var eles = event.cy.edges(sel);
-            //     if (event.target.selected()) {
-            //         eles.select();
-            //     } else {
-            //         eles.unselect();
-            //     }
-            // }
-            // this.cy.on("select", "edge", onSelect);
-            // this.cy.on("unselect", "edge", onSelect);
-
-            // var i = 1;
-            // var onDrag = function (event) {
-
-            //     event.cy.nodes(":grabbed").forEach(node => {
-            //         node.data("offset", String(i) + "%");
-            //         i = i + 1;
-            //     });
-            // }
-
-            this.cy.on('mousemove', function onmousemove(e) {
-                var pos = e.position || e.cyPosition;
+            mousepos: function (pos) {
                 self.cy.mouseX = pos.x;
                 self.cy.mouseY = pos.y;
-            });
-        }
+            },
+        };
+
+        opts = $.extend(defaults, opts);
+        this.cy = cytoscape({
+            container: container,
+
+            layout: {
+                name: 'grid',
+                rows: 2,
+                cols: 2
+            },
+
+            style: defaultStyles.concat(opts.style),
+
+            elements: {
+                nodes: [
+                    {
+                        data: {
+                            id: 0, type: "STATIC", labelData: new LabelData("C"),
+                            constraints: [
+                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] },
+                                { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] }
+                            ]
+                        }
+                    },
+                    { data: { id: 1, type: "STATIC", labelData: new LabelData("C") } },
+                ],
+                edges: [
+                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true, labelData: new LabelData("=") } }
+                ]
+            },
+            // renderer: {
+            //     name: 'canvas',
+            //     showFps: true
+            //   },
+        });
+
+        this.eh = this.cy.edgehandles(opts.edgeHandleOpts);
+
+        var tappedBefore = null;
+        var tappedTimeout;
+        this.cy.on('tap', function (event) {
+            if (event.target !== self.cy) {
+                return;
+            }
+            var tappedNow = event.cyTarget;
+            if (tappedTimeout && tappedBefore) {
+                clearTimeout(tappedTimeout);
+            }
+            if (tappedBefore === tappedNow) {
+                tappedBefore = null;
+                var pos = event.renderedPosition;
+                // n = addNode(cy, pos);
+                opts.dblclick(pos);
+            } else {
+                tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
+                tappedBefore = tappedNow;
+            }
+        });
+
+        this.cy.on('mousemove', function onmousemove(e) {
+            let pos = e.position || e.cyPosition;
+            opts.mousepos(pos);
+        });
 
         this.cy.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
         this.showConstraints = true;
 
         var cbOptions = {
-
-            // The following 4 options allow the user to provide custom behavior to
-            // the extension. They can be used to maintain consistency of some data
-            // when elements are duplicated.
-            // These 4 options are set to null by default. The function prototypes
-            // are provided below for explanation purpose only.
-
-            // Function executed on the collection of elements being copied, before
-            // they are serialized in the clipboard
-            beforeCopy: function (eles) { },
-            // Function executed on the clipboard just after the elements are copied.
-            // clipboard is of the form: {nodes: json, edges: json}
-            afterCopy: function (clipboard) { },
-            // Function executed on the clipboard right before elements are pasted,
-            // when they are still in the clipboard.
-            beforePaste: function (clipboard) {
-            },
             oldIdToNewId: function (cb) {
                 var idMap = new Map();
                 cb.nodes.forEach(n => {
@@ -366,11 +133,6 @@ export class Graph {
                 });
                 return idMap;
             },
-            // Function executed on the collection of pasted elements, after they
-            // are pasted.
-            afterPaste: function (eles) {
-
-            }
         };
 
         this.cb = this.cy.clipboard(cbOptions);
@@ -407,17 +169,17 @@ export class Graph {
 
         this.cy.nodeHtmlLabel([
             {
-              query: 'node[labelData]', // cytoscape query selector
-              halign: 'center', // title vertical position. Can be 'left',''center, 'right'
-              valign: 'center', // title vertical position. Can be 'top',''center, 'bottom'
-              halignBox: 'center', // title vertical position. Can be 'left',''center, 'right'
-              valignBox: 'center', // title relative box vertical position. Can be 'top',''center, 'bottom'
-              cssClass: 'html-node', // any classes will be as attribute of <div> container for every title
-              tpl(data) {
-                return opts.label(data) // your html template here
-              }
+                query: 'node[labelData]', // cytoscape query selector
+                halign: 'center', // title vertical position. Can be 'left',''center, 'right'
+                valign: 'center', // title vertical position. Can be 'top',''center, 'bottom'
+                halignBox: 'center', // title vertical position. Can be 'left',''center, 'right'
+                valignBox: 'center', // title relative box vertical position. Can be 'top',''center, 'bottom'
+                cssClass: 'html-node', // any classes will be as attribute of <div> container for every title
+                tpl(data) {
+                    return opts.label(data) // your html template here
+                }
             }
-          ]);
+        ]);
 
     }
 
@@ -427,7 +189,7 @@ export class Graph {
         var self = this;
         this.poppers.forEach(p => {
             p.popper.destroy();
-            self.cy.removeListener('position pan zoom resize',  p.handle);
+            self.cy.removeListener('position pan zoom resize', p.handle);
         });
         this.poppers = [];
         console.log("NUM LISTENERS ", this.cy.emitter().listeners.length);
@@ -441,7 +203,7 @@ export class Graph {
             out.push("<div class='constraintDiv'><table class='table table-dark'><tbody>");
 
             constraints.forEach(c => {
-                
+
                 out.push(`
                 <tr class="row">
                     <td >${c.op}</td>
@@ -483,7 +245,7 @@ export class Graph {
                         flip: {
                             enabled: false
                         },
-                        
+
                     },
                     removeOnDestroy: true,
                 },
@@ -503,7 +265,7 @@ export class Graph {
                 node: node
             });
         });
-       
+
     }
 
     clear() {
@@ -541,7 +303,7 @@ export class Graph {
             data: {
                 source: src,
                 target: tar,
-                label:  lblFun(label),
+                label: lblFun(label),
                 type: label.type,
                 chemview: this.showChemView,
                 labelData: label
@@ -727,15 +489,8 @@ export class Graph {
             {
                 name: "data", param: {
                     name: "label",
-                    eles: nodes,
-                    data: nodeData.toString()
-                }
-            },
-            {
-                name: "data", param: {
-                    name: "label",
                     eles: edges,
-                    data: edgeData.toString()
+                    data: lblFun(edgeData)
                 }
             },
             {
@@ -926,14 +681,14 @@ export class Graph {
             let src = edge.source().data("id");
             let tar = edge.target().data("id");
             if (lbl.type === LabelData.TYPE.STATIC) {
-                rule.context.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
+                rule.context.edges.push({ src: src, tar: tar, label: lbl.left.toString() });
             } else if (lbl.type === LabelData.TYPE.CREATE) {
-                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString()  });
+                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString() });
             } else if (lbl.type === LabelData.TYPE.REMOVE) {
-                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
+                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString() });
             } else if (lbl.type === LabelData.TYPE.RENAME) {
-                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString()  });
-                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString()  });
+                rule.left.edges.push({ src: src, tar: tar, label: lbl.left.toString() });
+                rule.right.edges.push({ src: src, tar: tar, label: lbl.right.toString() });
             }
         });
 

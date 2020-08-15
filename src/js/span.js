@@ -4,151 +4,153 @@ import LabelData from './label'
 export class Span {
 
     constructor(containerLeft, containerMiddle, containerRight) {
-        var addListeners = false;
-        console.log("Creating DPO Span");
-        this.L = new Graph(containerLeft, [
-            {
-                selector: '[type="CREATE"]',
-                style: {
-                    'visibility': 'hidden'
+        let self = this;
+        let edgeHandleOpts = {
+            edgeParams(sourceNode, targetNode, i) {
+                let labelData = null;
+                if (sourceNode.data('type') === LabelData.TYPE.CREATE ||
+                    targetNode.data('type') === LabelData.TYPE.CREATE) {
+                    labelData = new LabelData('/-', 'edge');
+                } else if (
+                    sourceNode.data('type') === LabelData.TYPE.REMOVE ||
+                    targetNode.data('type') === LabelData.TYPE.REMOVE) {
+                    labelData = new LabelData('-/', 'edge');
+                } else {
+                    labelData = new LabelData('-', 'edge');
                 }
-            }
-        ], addListeners, {
+                return {
+                    group: 'edges',
+                    data: {
+                        source: sourceNode.id(),
+                        target: targetNode.id(),
+                        label: '-',
+                        type: labelData.type,
+                        chemview: self.K.showChemView,
+                        labelData: labelData,
+                    }
+                }
+            },
+            addEles(cy, eles) {
+                return cy.ur.do("add", eles);
+            },
+            complete: function (sourceNode, targetNode, addedEles) {
+                console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
+                let edge = addedEles[0];
+
+                ["L", "K", "R"].forEach(U => {
+                    if (T === U) { return; }
+                    self[U].ur.do("add", {
+                        group: 'edges',
+                        data: {
+                            id: edge.id(),
+                            source: sourceNode.id(),
+                            target: targetNode.id(),
+                            label: edge.data("label"),
+                            type: edge.data("type"),
+                            chemview: edge.data("chemview")
+                        },
+                    });
+                });
+            },
+        };
+
+        let onMouseMove = function (pos) {
+            self.graphs().forEach(g => {
+                g.cy.mouseX = pos.x;
+                g.cy.mouseY = pos.y;
+            });
+        };
+        console.log("Creating DPO Span");
+        this.L = new Graph(containerLeft, {
+            style: [
+                {
+                    selector: '[type="CREATE"]',
+                    style: {
+                        'visibility': 'hidden'
+                    }
+                }
+            ],
+
             label: function (data) {
                 if (data.type === LabelData.TYPE.CREATE) { return ""; }
 
                 return data.labelData.left.toHTML();
-            }
+            },
+
+            edgeHandleOpts: edgeHandleOpts,
+
+            dblclick: function (pos) {
+                self.graphs().forEach(g => {
+                    g.addNode("C/", pos).select();
+                });
+            },
+
+            mousepos: onMouseMove,
+
         });
-        this.K = new Graph(containerMiddle, [
-            {
-                selector: '[type="CREATE"],[type="REMOVE"]',
-                style: {
-                    'visibility': 'hidden'
+        this.K = new Graph(containerMiddle,  {
+            style: [
+                {
+                    selector: '[type="CREATE"],[type="REMOVE"]',
+                    style: {
+                        'visibility': 'hidden'
+                    }
                 }
-            }
-        ], addListeners, {
+            ],
+
             label: function (data) {
                 if (data.type === LabelData.TYPE.CREATE || data.type === LabelData.TYPE.REMOVE) { return ""; }
 
                 return data.labelData.toHTML();
-            }
+            },
+
+            edgeHandleOpts: edgeHandleOpts,
+
+            dblclick: function (pos) {
+                self.graphs().forEach(g => {
+                    g.addNode("C", pos).select();
+                });
+            },
+
+            mousepos: onMouseMove,
         });
 
-        this.R = new Graph(containerRight, [
-            {
-                selector: '[type="REMOVE"]',
-                style: {
-                    'visibility': 'hidden'
+        this.R = new Graph(containerRight, {
+            style: [
+                {
+                    selector: '[type="REMOVE"]',
+                    style: {
+                        'visibility': 'hidden'
+                    }
                 }
-            }
-        ], addListeners, {
+            ],
             label: function (data) {
                 if (data.type === LabelData.TYPE.REMOVE) { return ""; }
                 return data.labelData.right.toHTML();
-            }
+            },
+
+            edgeHandleOpts: edgeHandleOpts,
+
+            dblclick: function (pos) {
+                self.graphs().forEach(g => {
+                    g.addNode("/C", pos).select();
+                });
+            },
+
+            mousepos: onMouseMove,
         });
 
-        var self = this;
-
-        this.eh = [];
-        ["L", "K", "R"].forEach(T => {
-            let defaults = {
-                edgeParams(sourceNode, targetNode, i) {
-
-                    if (sourceNode.data('type') === LabelData.TYPE.CREATE ||
-                        targetNode.data('type') === LabelData.TYPE.CREATE) {
-                        var parsedLabel = new LabelData('/-', 'edge');
-                    } else if (
-                        sourceNode.data('type') === LabelData.TYPE.REMOVE ||
-                        targetNode.data('type') === LabelData.TYPE.REMOVE) {
-                        var parsedLabel = new LabelData('-/', 'edge');
-                    } else {
-                        var parsedLabel = new LabelData('-', 'edge');
-                    }
-                    return {
-                        group: 'edges',
-                        data: {
-                            source: sourceNode.id(),
-                            target: targetNode.id(),
-                            label: '-',
-                            type: parsedLabel.type,
-                            chemview: self.K.showChemView
-                        }
-                    }
-                },
-                addEles(cy, eles) {
-                    return cy.ur.do("add", eles);
-                },
-                complete: function (sourceNode, targetNode, addedEles) {
-                    console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
-                    var edge = addedEles[0];
-                    // edge.data("color", LabelType.STATIC.color);
-                    // edge.data("label", "-");
-                    var src = sourceNode.id();
-                    var tar = targetNode.id();
-                    ["L", "K", "R"].forEach(U => {
-                        if (T === U) { return; }
-                        var ns = self[U].cy.nodes(`#${src}, #${tar}`);
-                        if (ns.length < 2) {
-                            return;
-                        }
-                        // var classes = [];
-                        // if (ns[0].hasClass("ghost-elem") || ns[1].hasClass("ghost-elem")) {
-                        //     classes.push("ghost-elem")
-                        // }
-
-                        self[U].ur.do("add", {
-                            group: 'edges',
-                            data: {
-                                id: edge.id(),
-                                source: sourceNode.id(),
-                                target: targetNode.id(),
-                                label: edge.data("label"),
-                                type: edge.data("type"),
-                                chemview: edge.data("chemview")
-                            },
-                            //  classes: classes
-                        });
-
-                        // self[U].cy.add({
-                        //     group: 'edges',
-                        //     data: {
-                        //         id: edge.id(),
-                        //         source: sourceNode.id(),
-                        //         target: targetNode.id(),
-                        //         label: edge.data("label"),
-                        //         type: edge.data("type"),
-                        //         chemview: edge.data("chemview")
-                        //     },
-                        //     classes: classes
-                        // });
-
-                    });
-                }
-            };
-            // self[T].eh.destroy();
-            var eh = self[T].cy.edgehandles(defaults);
-            self.eh.push(eh);
-        });
-
-        var onDrag = function (event) {
-
+        this.on("drag", function (event) {
             event.cy.nodes(":grabbed").forEach(node => {
                 ["L", "K", "R"].forEach(T => {
-                    var id = node.id();
+                    let id = node.id();
                     self[T].cy.getElementById(id).position(node.position());
                 })
             });
-        }
-
-        this.L.cy.on("drag", onDrag);
-        this.K.cy.on("drag", onDrag);
-        this.R.cy.on("drag", onDrag);
+        });
 
         this.viewportLocked = false;
-
-        var onViewport = function (event) {
+        this.on("viewport", function (event) {
             if (self.viewportLocked) { return; }
             self.viewportLocked = true;
             var zoom = event.cy.zoom();
@@ -159,13 +161,9 @@ export class Span {
                 self[T].cy.pan(pan);
             });
             self.viewportLocked = false;
-        }
+        });
 
-        this.L.cy.on("viewport", onViewport);
-        this.K.cy.on("viewport", onViewport);
-        this.R.cy.on("viewport", onViewport);
-
-        var onSelect = function (event) {
+        this.on("select unselect", function (event) {
             var sel = "#" + String(event.target.id());
             if (event.target.group() == "edges") {
                 var src = event.target.source().id();
@@ -181,67 +179,11 @@ export class Span {
                 self.K.cy.elements(sel).unselect();
                 self.R.cy.elements(sel).unselect();
             }
-        }
-        this.L.cy.on("select", onSelect);
-        this.K.cy.on("select", onSelect);
-        this.R.cy.on("select", onSelect);
-        this.L.cy.on("unselect", onSelect);
-        this.K.cy.on("unselect", onSelect);
-        this.R.cy.on("unselect", onSelect);
-
-        this.L.cy.removeListener("tap");
-        this.K.cy.removeListener("tap");
-        this.R.cy.removeListener("tap");
-
-        var tappedBefore = null;
-        var tappedTimeout;
-        var onTap = function (event) {
-            var tar = event.target;
-            if (tar !== self.L.cy && tar !== self.K.cy && tar !== self.R.cy) {
-                return;
-            }
-            var tappedNow = event.cyTarget;
-            if (tappedTimeout && tappedBefore) {
-                clearTimeout(tappedTimeout);
-            }
-            if (tappedBefore === tappedNow) {
-                tappedBefore = null;
-                var pos = event.renderedPosition;
-                if (tar === self.L.cy) {
-                    self.addNode("C/", pos)
-                } else if (tar === self.R.cy) {
-                    self.addNode("/C", pos);
-                } else {
-                    self.addNode("C", pos);
-                }
-                // ["L", "K", "R"].forEach(T => {
-                //     var n = self[T].addNode("C", pos);
-                //     n.select();
-                // });
-
-            } else {
-                tappedTimeout = setTimeout(function () { tappedBefore = null; }, 300);
-                tappedBefore = tappedNow;
-            }
-        };
-
-        this.L.cy.on("tap", onTap);
-        this.K.cy.on("tap", onTap);
-        this.R.cy.on("tap", onTap);
+        });
 
 
         this.nodeId = this.K.cy.nodes().length;
-
-        var onMouseMove = function (e) {
-            var pos = e.position || e.cyPosition;
-            self.graphs().forEach(g => {
-                g.cy.mouseX = pos.x;
-                g.cy.mouseY = pos.y;
-            });
-        };
         self.graphs().forEach(g => {
-            g.cy.on("mousemove", onMouseMove);
-
             g.cy.id = self.nodeId;
         });
     }
@@ -274,7 +216,7 @@ export class Span {
         var self = this;
         this.L.renameSelected(rawLabel, function (lbl) {
             if (lbl.type === LabelData.TYPE.RENAME) {
-                return lbl.left;
+                return lbl.left.toString();
             } else {
                 return lbl.toString();
             };
@@ -283,37 +225,11 @@ export class Span {
         this.K.renameSelected(rawLabel);
         this.R.renameSelected(rawLabel, function (lbl) {
             if (lbl.type === LabelData.TYPE.RENAME) {
-                return lbl.right;
+                return lbl.right.toString();
             } else {
                 return lbl.toString();
             };
         });
-        // var label = new Label(rawLabel);
-        // this.graphs().forEach(g => {
-        //     g.cy.elements(":selected").forEach(e => {
-        //         var eLabel = label.toString();
-        //         if (label.type === LabelType.RENAME && g === self.L) {
-        //             eLabel = label.left;
-        //         } else if (label.type === LabelType.RENAME && g === self.R) {
-        //             eLabel = label.right;
-        //         }
-        //         e.data("label", eLabel);
-        //         e.data("type", label.type);
-        //     });
-        // });
-
-        // this.graphs().forEach(g => {
-        //     g.cy.edges().forEach(e => {
-        //         var srcT = e.source().data("type");
-        //         var tarT = e.target().data("type");
-        //         var eT = e.data("type");
-        //         if (srcT === LabelType.CREATE || tarT === LabelType.CREATE) {
-        //             e.data("type", LabelType.CREATE);
-        //         } else if (srcT === LabelType.REMOVE || tarT === LabelType.REMOVE) {
-        //             e.data("type", LabelType.REMOVE);
-        //         }
-        //     });
-        // });
 
     }
 
@@ -349,6 +265,12 @@ export class Span {
     redo() {
         this.graphs().forEach(g => {
             g.redo();
+        });
+    }
+
+    on(action, fun) {
+        this.graphs().forEach(g => {
+            g.cy.on(action, fun);
         });
     }
 
@@ -413,7 +335,7 @@ export class Span {
         console.log("DPOSpan.readJsonRule()")
         this.L.readJsonRule(jsonRule, function (lbl) {
             if (lbl.type === LabelData.TYPE.RENAME) {
-                return lbl.left;
+                return lbl.left.toString();
             } else {
                 return lbl.toString();
             }
@@ -421,7 +343,7 @@ export class Span {
         this.K.readJsonRule(jsonRule);
         this.R.readJsonRule(jsonRule, function (lbl) {
             if (lbl.type === LabelData.TYPE.RENAME) {
-                return lbl.right;
+                return lbl.right.toString();
             } else {
                 return lbl.toString();
             }

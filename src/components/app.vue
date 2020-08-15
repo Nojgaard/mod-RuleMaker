@@ -173,6 +173,7 @@ h1 {
 .html-node {
   padding-bottom: 4px;
   cursor: default;
+  color: #343a40;
   /* line-height: 1;
   vertical-align: middle; */
 }

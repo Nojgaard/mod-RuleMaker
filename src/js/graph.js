@@ -56,8 +56,8 @@ export class Graph {
                 self.cy.mouseY = pos.y;
             },
         };
-
         opts = $.extend(defaults, opts);
+
         this.cy = cytoscape({
             container: container,
 
@@ -124,7 +124,8 @@ export class Graph {
         this.showChemView = true;
         this.showConstraints = true;
 
-        var cbOptions = {
+
+        this.cb = this.cy.clipboard({
             oldIdToNewId: function (cb) {
                 var idMap = new Map();
                 cb.nodes.forEach(n => {
@@ -133,23 +134,16 @@ export class Graph {
                 });
                 return idMap;
             },
-        };
+        });
 
-        this.cb = this.cy.clipboard(cbOptions);
-        this.poppers = [];
-        this.updatePoppers();
-
-        var options = {
-            isDebug: true, // Debug mode for console messages
+        this.ur = this.cy.ur = this.cy.undoRedo({
+            isDebug: true, 
             // actions: {},// actions to be added
             undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
             stackSizeLimit: undefined, // Size limit of undo stack, note that the size of redo stack cannot exceed size of undo stack
             ready: function () { // callback when undo-redo is ready
-
             }
-        }
-
-        this.ur = this.cy.ur = this.cy.undoRedo(options); // Can also be set whenever wanted.
+        }); 
 
         this.ur.action("data", function (args) {
             if (args.firstTime) {
@@ -181,6 +175,8 @@ export class Graph {
             }
         ]);
 
+        this.poppers = [];
+        this.updatePoppers();
     }
 
     updatePoppers() {
@@ -236,7 +232,7 @@ export class Graph {
                         preventOverflow: {
                             enabled: true,
                             boundariesElement: self.cy.container(),
-                            // padding: -5,
+                            padding: 0,
                             escapeWithReference: true
                         },
                         hide: {

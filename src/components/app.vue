@@ -95,6 +95,7 @@ body {
   height: 100%;
   width: 100%;
   margin: 0%;
+  overflow: hidden; /* Hide scrollbars */
 }
 
 #cy {
@@ -181,7 +182,6 @@ h1 {
 sub {
   vertical-align: sub;
   font-size: medium;
-
 }
 
 sup {

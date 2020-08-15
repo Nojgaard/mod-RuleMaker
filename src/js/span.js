@@ -149,10 +149,10 @@ export class Span {
             });
         });
 
-        this.viewportLocked = false;
+        let viewportLocked = false;
         this.on("viewport", function (event) {
-            if (self.viewportLocked) { return; }
-            self.viewportLocked = true;
+            if (viewportLocked) { return; }
+            viewportLocked = true;
             var zoom = event.cy.zoom();
             var pan = event.cy.pan();
 
@@ -160,7 +160,7 @@ export class Span {
                 self[T].cy.zoom(zoom, pan);
                 self[T].cy.pan(pan);
             });
-            self.viewportLocked = false;
+            viewportLocked = false;
         });
 
         this.on("select unselect", function (event) {

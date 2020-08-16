@@ -4,11 +4,12 @@ import postcss from 'rollup-plugin-postcss';
 import vue from 'rollup-plugin-vue2'
 // import { terser } from "rollup-plugin-terser";
 import replace from '@rollup/plugin-replace';
+import typescript from '@rollup/plugin-typescript'
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 // const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 
-const input = './src/index.js';
+const input = './src/index.ts';
 
 const name = 'MODviz';
 const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
@@ -20,9 +21,9 @@ const envVariables = {
 
 const configs = [
   {
-    input,
+    input: 'src/index.ts',
     output: {
-      file: 'build/MODviz.umd.js',
+     file: 'build/MODviz.umd.js',
       format: 'umd',
       name,
       sourcemap: 'inline'
@@ -34,6 +35,7 @@ const configs = [
       postcss({
         extensions: ['.css'],
       }),
+      typescript(),
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       commonjs({ include: './src/core/grammars/*.js' }),

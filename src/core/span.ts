@@ -2,6 +2,9 @@ import Graph from './graph'
 import LabelData from './label'
 
 class Span {
+    L: Graph;
+    K: Graph;
+    R: Graph;
 
     constructor(containerLeft, containerMiddle, containerRight) {
         let self = this;
@@ -33,13 +36,13 @@ class Span {
             addEles(cy, eles) {
                 return cy.ur.do("add", eles);
             },
-            complete: function (sourceNode, targetNode, addedEles) {
+            complete: function (sourceNode: cytoscape.NodeSingular, targetNode, addedEles) {
                 console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)
                 let edge = addedEles[0];
 
-                ["L", "K", "R"].forEach(U => {
-                    if (T === U) { return; }
-                    self[U].ur.do("add", {
+                self.graphs().forEach(g => {
+                    if (sourceNode.cy() === g.cy) { return; }
+                    g.ur.do("add", {
                         group: 'edges',
                         data: {
                             id: edge.id(),
@@ -56,8 +59,8 @@ class Span {
 
         let onMouseMove = function (pos) {
             self.graphs().forEach(g => {
-                g.cy.mouseX = pos.x;
-                g.cy.mouseY = pos.y;
+                g.cy["mouseX"] = pos.x;
+                g.cy["mouseY"] = pos.y;
             });
         };
         console.log("Creating DPO Span");
@@ -182,9 +185,9 @@ class Span {
         });
 
 
-        this.nodeId = this.K.cy.nodes().length;
+        //this.nodeId = this.K.cy.nodes().length;
         self.graphs().forEach(g => {
-            g.cy.id = self.nodeId;
+            g.id = this.K.cy.nodes().length;
         });
     }
 
@@ -192,7 +195,7 @@ class Span {
         this.graphs().forEach(g => {
             g.addNode(rawLabel, pos);
         });
-        this.nodeId = this.nodeId + 1;
+        //this.nodeId = this.nodeId + 1;
         // var label = new Label(rawLabel);
         // var self = this
 
@@ -242,12 +245,12 @@ class Span {
 
     paste() {
         var self = this;
-        console.log("NODE ID ", this.nodeId);
+        console.log("NODE ID ", this.K.id);
         this.graphs().forEach(g => {
-            g.cy.id = self.nodeId;
+            //g.cy.id = self.nodeId;
             g.paste();
         });
-        this.nodeId = this.K.cy.id;
+        //this.nodeId = this.K.cy.id;
     }
 
     clear() {
@@ -316,10 +319,10 @@ class Span {
         //this.clear();
         var self = this;
         this.graphs().forEach(g => {
-            g.cy.id = self.nodeId;
+            //g.cy.id = self.nodeId;
             g.addJsonGraph(jsonGraph);
         });
-        this.nodeId = this.K.cy.id;
+        //this.nodeId = this.K.cy.id;
     }
 
     readJsonGraph(jsonGraph) {
@@ -328,7 +331,7 @@ class Span {
         this.graphs().forEach(g => {
             g.readJsonGraph(jsonGraph);
         });
-        this.nodeId = this.K.cy.id;
+       // this.nodeId = this.K.cy.id;
     }
 
     readJsonRule(jsonRule) {
@@ -351,11 +354,11 @@ class Span {
         // this.graphs().forEach(g => {
         //     g.readJsonRule(jsonRule);
         // })
-        this.nodeId = this.K.cy.id;
+        // this.nodeId = this.K.cy.id;
     }
 
-    readModGraph(modgraph) {
-        this.nodeId = modgraph.cy.id;
+    readModGraph(modgraph: Graph) {
+        // this.nodeId = modgraph.cy.id;
         this.graphs().forEach(g => {
             g.cy.remove(g.cy.elements());
             g.cy.add(modgraph.cy.elements(":selectable"));
@@ -363,7 +366,7 @@ class Span {
             g.showChemView = modgraph.showChemView;
             g.showConstraints = modgraph.showConstraints;
             g.updatePoppers();
-            g.cy.id = modgraph.cy.id;
+            g.id = modgraph.id;
         });
 
         this.L.cy.edges("[labelData]").forEach(e => {

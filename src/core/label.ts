@@ -8,6 +8,11 @@ const LabelType = {
 }
 
 class NodeData {
+    isotope: number;
+    label: string;
+    charge: number;
+    html: string;
+
     constructor(label) {
         console.log("PARSING ", label);
         let data = parseLabel.parse(label);
@@ -47,6 +52,8 @@ class NodeData {
 }
 
 class EdgeData {
+    label: string;
+
     constructor(label) {
         this.label = label;
     }
@@ -54,9 +61,25 @@ class EdgeData {
     toString() {
         return this.label;
     }
+
+    toHTML() {
+        return this.label;
+    }
 }
 
 class LabelData {
+    rawLabel: string;
+    left: NodeData | EdgeData;
+    right: NodeData | EdgeData;
+    type: string;
+
+    static readonly TYPE = {
+        STATIC: "STATIC",
+        REMOVE: "REMOVE",
+        CREATE: "CREATE",
+        RENAME: "RENAME"
+    }
+
     constructor(rawLabel, eletype = "node") {
         this.rawLabel = rawLabel;
 
@@ -101,6 +124,6 @@ class LabelData {
     }
 }
 
-LabelData.TYPE = LabelType;
+//LabelData.TYPE = LabelType;
 
 export default LabelData;

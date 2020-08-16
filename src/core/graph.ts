@@ -4,7 +4,7 @@ import edgehandles from 'cytoscape-edgehandles'
 import undoRedo from 'cytoscape-undo-redo'
 import clipboard from 'cytoscape-clipboard'
 import popper from 'cytoscape-popper';
-import nodeHtmlLabel from 'cytoscape-node-html-label'
+import nodeHtmlLabel from 'cytoscape-node-html-label';
 import $ from 'jquery'
 
 import LabelData from './label'
@@ -16,8 +16,25 @@ cytoscape.use(undoRedo);
 clipboard(cytoscape, jquery);
 nodeHtmlLabel(cytoscape);
 
+// declare module cytoscape {
+//     interface Core {
+//         id?: number;
+//         mouseX?: number;
+//         mouseY?: number;
+//     }
+// }
+
 class Graph {
-    constructor(container, opts = {}) {
+    cy: cytoscape.Core;
+    id: number;
+    showChemView: boolean;
+    showConstraints: boolean;
+    eh: any;
+    cb: any;
+    ur: any;
+    poppers: {popper: any, handle: any, node: any}[];
+
+    constructor(container, opts: any = {}) {
         let self = this;
 
         const defaults = {
@@ -43,7 +60,7 @@ class Graph {
                     return self.cyEdge(rawLabel, source.id(), target.id());
                 },
                 addEles: function (cy, eles) {
-                    return cy.ur.do("add", eles);
+                    return self.ur.do("add", eles);
                 }
             },
 
@@ -52,8 +69,8 @@ class Graph {
             },
 
             mousepos: function (pos) {
-                self.cy.mouseX = pos.x;
-                self.cy.mouseY = pos.y;
+                self.cy["mouseX"] = pos.x;
+                self.cy["mouseY"] = pos.y;
             },
         };
         opts = $.extend(defaults, opts);
@@ -73,17 +90,17 @@ class Graph {
                 nodes: [
                     {
                         data: {
-                            id: 0, type: "STATIC", labelData: new LabelData("C"),
+                            id: "0", type: "STATIC", labelData: new LabelData("C"),
                             constraints: [
                                 { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] },
                                 { op: ">", count: 2, nodeLabels: ["C"], edgeLabels: [] }
                             ]
                         }
                     },
-                    { data: { id: 1, type: "STATIC", labelData: new LabelData("C") } },
+                    { data: { id: "1", type: "STATIC", labelData: new LabelData("C") } },
                 ],
                 edges: [
-                    { data: { source: 0, target: 1, label: "=", type: "STATIC", chemview: true, labelData: new LabelData("=") } }
+                    { data: { source: "0", target: "1", label: "=", type: "STATIC", chemview: true, labelData: new LabelData("=") } }
                 ]
             },
             // renderer: {
@@ -92,21 +109,21 @@ class Graph {
             //   },
         });
 
-        this.eh = this.cy.edgehandles(opts.edgeHandleOpts);
+        this.eh = this.cy['edgehandles'](opts.edgeHandleOpts);
 
-        var tappedBefore = null;
-        var tappedTimeout;
+        let tappedBefore = null;
+        let tappedTimeout;
         this.cy.on('tap', function (event) {
             if (event.target !== self.cy) {
                 return;
             }
-            var tappedNow = event.cyTarget;
+            let tappedNow = event.target;
             if (tappedTimeout && tappedBefore) {
                 clearTimeout(tappedTimeout);
             }
             if (tappedBefore === tappedNow) {
                 tappedBefore = null;
-                var pos = event.renderedPosition;
+                let pos = event.renderedPosition;
                 // n = addNode(cy, pos);
                 opts.dblclick(pos);
             } else {
@@ -116,27 +133,27 @@ class Graph {
         });
 
         this.cy.on('mousemove', function onmousemove(e) {
-            let pos = e.position || e.cyPosition;
+            let pos = e.position;
             opts.mousepos(pos);
         });
 
-        this.cy.id = this.cy.nodes(":selectable").length
+        this.id = this.cy.nodes(":selectable").length
         this.showChemView = true;
         this.showConstraints = true;
 
 
-        this.cb = this.cy.clipboard({
+        this.cb = this.cy["clipboard"]({
             oldIdToNewId: function (cb) {
                 var idMap = new Map();
                 cb.nodes.forEach(n => {
-                    idMap.set(n.data.id, self.cy.id);
-                    self.cy.id += 1;
+                    idMap.set(n.data.id, self.id);
+                    self.id += 1;
                 });
                 return idMap;
             },
         });
 
-        this.ur = this.cy.ur = this.cy.undoRedo({
+        this.ur = this.cy["undoRedo"]({
             isDebug: true,
             // actions: {},// actions to be added
             undoableDrag: false, // Whether dragging nodes are undoable can be a function as well
@@ -161,7 +178,7 @@ class Graph {
             return args;
         });
 
-        this.cy.nodeHtmlLabel([
+        this.cy["nodeHtmlLabel"]([
             {
                 query: 'node[labelData]', // cytoscape query selector
                 halign: 'center', // title vertical position. Can be 'left',''center, 'right'
@@ -188,8 +205,7 @@ class Graph {
             self.cy.removeListener('position pan zoom resize', p.handle);
         });
         this.poppers = [];
-        console.log("NUM LISTENERS ", this.cy.emitter().listeners.length);
-
+        console.log("NUM LISTENERS ", this.cy["emitter"]().listeners.length);
         if (!this.showConstraints) {
             return;
         }
@@ -216,7 +232,7 @@ class Graph {
 
         this.cy.nodes(":visible[constraints]").forEach(node => {
             console.log("adding popper");
-            let popper = node.popper({
+            let popper = node["popper"]({
                 content: () => {
                     let div = document.createElement('div');
 
@@ -266,7 +282,7 @@ class Graph {
 
     clear() {
         var eles = this.cy.elements();
-        this.cy.ur.do('remove', eles);
+        this.ur.do('remove', eles);
         //this.cy.id = 0;
         this.updatePoppers();
     }
@@ -277,18 +293,18 @@ class Graph {
         var n = {
             group: 'nodes',
             data: {
-                id: this.cy.id,
+                id: this.id,
                 type: labelData.type,
                 labelData: labelData
             },
 
         };
         if (!useRenderedPosition) {
-            n.position = pos;
+            n["position"] = pos;
         } else {
-            n.renderedPosition = { x: pos.x, y: pos.y };
+            n["renderedPosition"] = { x: pos.x, y: pos.y };
         }
-        this.cy.id = this.cy.id + 1;
+        this.id = this.id + 1;
         return n;
     }
 
@@ -384,7 +400,7 @@ class Graph {
                 rawLabel = node.left;
             }
             var scaledPos = { x: node.position.x * 100, y: node.position.y * 100 };
-            var n = self.cyNode(rawLabel, scaledPos, false, lblFun);
+            var n = self.cyNode(rawLabel, scaledPos, false);
             node.cyNode = n;
             eles.nodes.push(n);
         });
@@ -412,7 +428,7 @@ class Graph {
     }
 
     addNode(lbl, pos) {
-        console.log("adding node with id: " + String(this.cy.id))
+        console.log("adding node with id: " + String(this.id))
         // var n = this.cy.add(this.cyNode(lbl, pos));
         var n = this.ur.do("add", this.cyNode(lbl, pos));
         return n;
@@ -526,7 +542,7 @@ class Graph {
             },
         ]
 
-        this.cy.ur.do("batch", actionList);
+        this.ur.do("batch", actionList);
     }
 
     addJsonGraph(jsonGraph) {
@@ -559,11 +575,12 @@ class Graph {
                 name: "add", param: addEles
             }
         ]);
+        let self = this;
         var lay = this.cy.layout({
             name: 'preset',
             padding: 50,
-            positions: function (node) {
-                return node.position();
+            positions: function (nodeid) {
+                return self.cy.getElementById(nodeid).position();
             }
         });
         lay.run();
@@ -594,11 +611,12 @@ class Graph {
             //     name: "layout", eles: addEles, param: layoutArgs
             // }
         ]);
-        var lay = this.cy.layout({
+        let self = this;
+        let lay = this.cy.layout({
             name: 'preset',
             padding: 50,
-            positions: function (node) {
-                return node.position();
+            positions: function (nodeid) {
+                return self.cy.getElementById(nodeid).position();
             }
         });
         lay.run();
@@ -703,15 +721,15 @@ class Graph {
         });
         this.cy.nodes("[constraints]").forEach(n => {
             n.data("constraints").forEach(c => {
-                var gmlnl = []
+                let gmlnl:string[] = []
                 c.nodeLabels.forEach(l => { gmlnl.push("label \"" + l + "\"") });
-                gmlnl = "[ " + gmlnl.join(" ") + " ]";
+                let gmlnlStr = "[ " + gmlnl.join(" ") + " ]";
 
-                var gmlel = []
+                let gmlel = []
                 c.edgeLabels.forEach(l => { gmlel.push("label \"" + l + "\"") });
-                gmlel = "[ " + gmlel.join(" ") + " ]";
+                let gmlelStr = "[ " + gmlel.join(" ") + " ]";
 
-                output.push(`constrainAdj [ id ${n.id()} op "${c.op}" count ${c.count} nodeLabels ${gmlnl} edgeLabels ${gmlel} ]`)
+                output.push(`constrainAdj [ id ${n.id()} op "${c.op}" count ${c.count} nodeLabels ${gmlnlStr} edgeLabels ${gmlelStr} ]`)
             });
 
         });
@@ -721,7 +739,7 @@ class Graph {
 
     readDPOSPan(span) {
         this.cy.remove(this.cy.elements());
-        this.cy.id = span.K.cy.nodes().length;
+        this.id = span.K.cy.nodes().length;
         this.cy.add(span.K.cy.elements(":selectable"));
         this.cy.fit();
         this.showChemView = span.K.showChemView;
@@ -732,7 +750,7 @@ class Graph {
     toggleChemView() {
 
         this.showChemView = !this.showChemView;
-        this.cy.edges(":selectable").data('chemview', this.showChemView);
+        this.cy.edges(":selectable").forEach(e => { e. data('chemview', this.showChemView); })  
     }
 
     toggleShowConstraints() {

@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        //"allowJs": true,
+        "target": "es6",
+        "allowSyntheticDefaultImports": true,
+       //  "outDir": "build",
+        "moduleResolution": "node",
+        //"experimentalDecorators": true,
+        "typeRoots": ["./src/typings", "./node_modules/@types"],
+       // "strict": true
+    //    "rootDir": "./src",
+    },
+    "exclude": ["node_modules"]
+}

@@ -1,4 +1,4 @@
-const styles = [
+const styles: any[] = [
     {
         selector: 'node',
         style: {
@@ -10,7 +10,7 @@ const styles = [
         selector: 'edge[label]',
         style: {
             'curve-style': 'haystack',
-            'haystack-radius': '0',
+            'haystack-radius': 0,
             'label': function (label) { return (label.data().label + "\n \u2060") },
             'text-wrap': 'wrap',
             "edge-text-rotation": "autorotate"

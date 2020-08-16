@@ -1,6 +1,10 @@
 "use strict";
 
 class ModService {
+	ws: WebSocket;
+	tag_id: number;
+	callback_map: Map<any, any>;
+
 	constructor(host, port) {
 		var self = this;
 		this.ws = null

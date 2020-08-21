@@ -2,10 +2,16 @@
 
 ## Installation
 It is expected that you have MØD installed on your system, you have a version
-of `npm` and that the python `websocket` module is installed.
+of `npm` and the python modules `websocket` and `jsonschema`
 ```
 sudo apt install npm
-pip3 install websocket
+pip3 install websockets jsonschema
+```
+
+If you have conda installed, you can get all dependencies like so:
+```
+conda create -n modviz -c nojgaard -c conda-forge mod websockets npm jsonschema
+conda activate modviz
 ```
 
 To install package dependencies and build the package, move to the root of the

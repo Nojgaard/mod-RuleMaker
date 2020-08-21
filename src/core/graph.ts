@@ -290,7 +290,7 @@ class Graph {
     cyNode(rawLabel, pos, useRenderedPosition = true) {
         //var label = new Label(rawLabel);
         let labelData = new LabelData(rawLabel, "node");
-        var n = {
+        let n = {
             group: 'nodes',
             data: {
                 id: this.id,

@@ -34,7 +34,11 @@ class Span {
                 }
             },
             addEles(cy, eles) {
-                return cy.ur.do("add", eles);
+                let gcy = self.L;
+                self.graphs().forEach(g => {
+                    if (g.cy === cy) { gcy = g; }
+                })
+                return gcy.ur.do("add", eles);
             },
             complete: function (sourceNode: cytoscape.NodeSingular, targetNode, addedEles) {
                 console.log(`adding edge: src=${sourceNode.id()}, tar=${targetNode.id()}`)

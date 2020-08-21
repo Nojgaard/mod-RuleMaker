@@ -35,8 +35,8 @@ const configs = [
       postcss({
         extensions: ['.css'],
       }),
-      typescript(),
       nodeResolve(),
+      typescript(),
       commonjs({ include: '**/node_modules/**' }),
       commonjs({ include: './src/core/grammars/*.js' }),
       

@@ -1,3 +1,0 @@
-.PHONY: clean
-clean:
-	rm -f summary/{all.tex,summary.{aux,log,out,pdf,toc},master.tex}

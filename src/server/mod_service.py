@@ -258,8 +258,10 @@ class Server(object):
 
 if __name__ == "__main__":
 	import sys
-	if len(sys.argv) < 2:
-		print("Missing port number.")
-		sys.exit(1)
-	s = Server(sys.argv[1])
+	s = Server(5000)
 	s.run()
+	#if len(sys.argv) < 2:
+		#print("Missing port number.")
+		#sys.exit(1)
+	#s = Server(sys.argv[1])
+	#s.run()

@@ -1,0 +1,4 @@
+Running VM ---------------------------------------------------------
+Executing code from 'src/server/mod_service.py'
+2020-08-21 20:43:02,628 Starting server on port 5000
+2020-08-21 20:43:28,024 Connection accepted: *:5000/

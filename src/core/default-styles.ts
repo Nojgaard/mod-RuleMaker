@@ -3,6 +3,7 @@ const styles: any[] = [
         selector: 'node',
         style: {
           //  'width': '50'
+          //'shape': 'rectangle'
         }
     },
 
